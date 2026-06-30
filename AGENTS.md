@@ -41,8 +41,9 @@
 - spec의 FR 번호는 plan과 tasks에서 추적 가능해야 한다 (어떤 코드가 어떤 FR을 구현하는지).
 - 데이터 모델은 spec → Drizzle 스키마 순으로 흐른다. 스키마를 먼저 바꾸고 spec을
   나중에 맞추지 않는다.
-- 현재 진행 중: `specs/000-meeting-poll/` — spec.md(Approved, When2meet식 캘린더+격자 모델),
-  plan.md, design.md 모두 작성·점검 완료. 다음 단계는 구현(plan §6의 T1부터).
+- 현재 상태: `specs/000-meeting-poll/` — spec.md(Implemented). plan §6 T1~T9 구현 완료.
+  순수 로직(token/datetime/grid/aggregate/layout/rules)은 Jest 단위 테스트, DB 레이어
+  (queries/mutations)와 Route Handler는 로컬 DB 대상 수동 E2E로 검증. 통합 테스트는 후속 과제.
 - 모델 요약: 로그인 없음. 폴 생성자가 캘린더에서 날짜들 + 하루 시간 범위를 고르면 서버가
   30분 격자 슬롯으로 펼친다. 참가자는 격자를 드래그로 칠해 응답, 집계는 히트맵. 공개 토큰이 권한.
 

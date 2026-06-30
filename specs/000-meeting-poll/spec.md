@@ -1,9 +1,10 @@
 # Spec: 미팅 폴 흐름 (Meeting Poll Flow)
 
-- Status: Approved
+- Status: Implemented
 - Owner: TBD
 - Created: 2026-06-30
 - Approved: 2026-06-30 (When2meet식 캘린더+격자 모델로 전환 후 재승인)
+- Implemented: 2026-06-30 (plan §6 T1~T9 완료, DB 레이어는 수동 E2E 검증)
 
 ## 1. 배경 / 문제 정의
 Meeet은 여러 사람이 참여하는 미팅 하나의 시간을 빠르게 정하기 위한 일회성 도구다(When2meet식).
