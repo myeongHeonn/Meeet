@@ -21,6 +21,7 @@ src/
       mutations.ts                 # 폴 생성/응답 upsert/확정 (DB 쓰기, 트랜잭션)
       grid.ts                      # [날짜×시간범위] → 30분 격자 슬롯 펼치기 (순수 함수, FR-3)
       aggregate.ts                 # 칸별 가능 인원 집계 → 히트맵 데이터 (순수 함수, FR-8)
+      layout.ts                    # UTC 슬롯 → 뷰어 타임존 (날짜열×시간행) 배치 (순수 함수, FR-12)
       rules.ts                     # 확정 가능 여부 등 분기 판정 (순수 함수, DB 무관)
   app/
     page.tsx                       # 폴 생성 페이지 셸 (GET /, 서버 컴포넌트)
