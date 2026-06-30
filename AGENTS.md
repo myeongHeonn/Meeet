@@ -30,8 +30,10 @@
    구현을 시작하지 않는다.
 2. `plan.md` — spec을 어떻게 구현할지 기술 설계. `specs/templates/plan-template.md` 사용.
    Drizzle 스키마 변경, Zod 스키마 위치, 라우트/컴포넌트 경계, 테스트 전략을 명시한다.
-3. `tasks.md` — plan을 실행 가능한 작업 목록으로 분해. `specs/templates/tasks-template.md` 사용.
-4. 구현 — tasks.md의 각 항목을 순서대로 수행하고 체크한다. 구현이 끝나면 spec.md의
+3. `design.md`(선택) — UI가 있는 기능은 화면 단위 경량 와이어프레임을 잡는다.
+   화면 ASCII 스케치 + 요소 + 상태 + FR↔화면 매핑. 정보 구조가 복잡한 화면이 있을 때만.
+4. `tasks.md` — plan을 실행 가능한 작업 목록으로 분해. `specs/templates/tasks-template.md` 사용.
+5. 구현 — tasks.md의 각 항목을 순서대로 수행하고 체크한다. 구현이 끝나면 spec.md의
    Status를 `Implemented`로 갱신한다.
 
 규칙:
@@ -39,7 +41,10 @@
 - spec의 FR 번호는 plan과 tasks에서 추적 가능해야 한다 (어떤 코드가 어떤 FR을 구현하는지).
 - 데이터 모델은 spec → Drizzle 스키마 순으로 흐른다. 스키마를 먼저 바꾸고 spec을
   나중에 맞추지 않는다.
-- 현재 진행 중: `specs/000-meeting-poll/spec.md` (Approved). 다음 단계는 `plan.md` 작성.
+- 현재 진행 중: `specs/000-meeting-poll/` — spec.md(Approved, When2meet식 캘린더+격자 모델),
+  plan.md, design.md 모두 작성·점검 완료. 다음 단계는 구현(plan §6의 T1부터).
+- 모델 요약: 로그인 없음. 폴 생성자가 캘린더에서 날짜들 + 하루 시간 범위를 고르면 서버가
+  30분 격자 슬롯으로 펼친다. 참가자는 격자를 드래그로 칠해 응답, 집계는 히트맵. 공개 토큰이 권한.
 
 ## 컨벤션
 - 모든 서버 입력(폼 제출, API 바디, 쿼리 파라미터)은 Zod로 파싱한다. 신뢰할 수 없는
