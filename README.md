@@ -1,6 +1,6 @@
 # Meeet
 
-미팅/일정 스케줄링 서비스.
+여러 사람이 참여하는 미팅 하나의 시간을 빠르게 정하는 일회성 도구 (When2meet/Doodle식).
 
 ## 스택
 Next.js 15 (App Router) · TypeScript · React 19 · Tailwind CSS 4 · Drizzle ORM ·

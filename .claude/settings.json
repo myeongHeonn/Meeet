@@ -12,7 +12,12 @@
       "Bash(npm audit *)",
       "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('/Users/omyeongheon/workspace/Meeet/node_modules/eslint-config-next/package.json'\\).exports, null, 2\\)\\)\")",
       "Bash(git remote *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git -C /Users/omyeongheon/workspace/Meeet mv specs/001-core-booking-flow specs/001-meeting-poll)",
+      "Bash(git rm *)",
+      "Bash(git mv *)"
     ]
   }
 }
