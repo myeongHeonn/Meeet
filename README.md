@@ -9,7 +9,8 @@ Postgres · Zod · Jest + React Testing Library · Vercel
 ## 시작하기
 
 ```bash
-cp .env.example .env.local   # DATABASE_URL 설정
+cp .env.example .env.local   # DATABASE_URL 설정 (기본값은 아래 docker DB에 맞춰져 있음)
+docker compose up -d         # 로컬 Postgres (meeet-db, 포트 5434)
 npm install
 npm run dev
 ```

@@ -114,4 +114,4 @@ API:
 - 클라이언트의 타임존 판별이 불가능한 경우(JS 비활성 등은 Next.js 앱에서 사실상 발생하지 않음) UTC를 그대로 표시한다.
 
 ## 9. 열린 질문 (Open Questions)
-- [ ] publicToken의 길이/엔트로피 — 단순 조회 권한이 아니라 확정까지 가능한 권한이므로, 추측 공격에 안전한 충분한 길이(예: 256bit 랜덤)가 필요하다. 구체적인 생성 방식은 `plan.md`에서 결정.
+- [x] publicToken의 길이/엔트로피 → `plan.md` §7에서 결정: `node:crypto`의 `randomBytes(32).toString("base64url")`(256bit)로 생성한다.

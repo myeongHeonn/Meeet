@@ -17,7 +17,11 @@
       "Bash(git push *)",
       "Bash(git -C /Users/omyeongheon/workspace/Meeet mv specs/001-core-booking-flow specs/001-meeting-poll)",
       "Bash(git rm *)",
-      "Bash(git mv *)"
+      "Bash(git mv *)",
+      "Bash(brew services *)",
+      "Bash(pg_isready)",
+      "Bash(PGPASSWORD=\"\" /Library/PostgreSQL/18/bin/psql -h localhost -p 5433 -U postgres -lqt)",
+      "Bash(docker info *)"
     ]
   }
 }
