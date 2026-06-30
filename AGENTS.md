@@ -1,5 +1,55 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+# Meeet
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+미팅/일정 스케줄링 서비스. 호스트가 가용 시간을 등록하면 초대자가 공개 링크에서
+시간을 골라 예약하는 흐름이 핵심이다.
+
+## 기술 스택
+- Next.js 15 (App Router), TypeScript, React 19
+- Tailwind CSS 4
+- Drizzle ORM + Postgres (`postgres` 드라이버)
+- Zod (모든 외부 입력 검증)
+- Jest + React Testing Library
+
+## 디렉토리 구조
+- `src/app/` — App Router 라우트
+- `src/db/schema.ts` — Drizzle 스키마 (단일 진실 소스)
+- `src/db/index.ts` — DB 클라이언트
+- `src/lib/validations/` — Zod 스키마 (기능별로 분리)
+- `specs/` — SDD 스펙 문서 (아래 참고)
+- `drizzle.config.ts`, `drizzle/` — 마이그레이션 설정/산출물
+
+## 개발 방식: SDD (Spec-Driven Development)
+이 프로젝트는 코드를 먼저 짜지 않는다. 모든 기능은 `specs/<NNN>-<slug>/` 아래에
+다음 순서로 문서를 쌓고, 각 단계가 승인된 뒤 다음 단계로 넘어간다.
+
+1. `spec.md` — 무엇을, 왜 만드는지. `specs/templates/spec-template.md` 사용.
+   요구사항(FR-N)과 데이터 모델을 정의한다. **Status: Approved**가 되기 전에는
+   구현을 시작하지 않는다.
+2. `plan.md` — spec을 어떻게 구현할지 기술 설계. `specs/templates/plan-template.md` 사용.
+   Drizzle 스키마 변경, Zod 스키마 위치, 라우트/컴포넌트 경계, 테스트 전략을 명시한다.
+3. `tasks.md` — plan을 실행 가능한 작업 목록으로 분해. `specs/templates/tasks-template.md` 사용.
+4. 구현 — tasks.md의 각 항목을 순서대로 수행하고 체크한다. 구현이 끝나면 spec.md의
+   Status를 `Implemented`로 갱신한다.
+
+규칙:
+- spec 없이 새 기능 코드를 작성하지 않는다. 사소한 버그 수정/리팩토링은 예외.
+- spec의 FR 번호는 plan과 tasks에서 추적 가능해야 한다 (어떤 코드가 어떤 FR을 구현하는지).
+- 데이터 모델은 spec → Drizzle 스키마 순으로 흐른다. 스키마를 먼저 바꾸고 spec을
+  나중에 맞추지 않는다.
+- 현재 진행 중: `specs/001-core-booking-flow/spec.md` (Draft, 리뷰 대기 중).
+
+## 컨벤션
+- 모든 서버 입력(폼 제출, API 바디, 쿼리 파라미터)은 Zod로 파싱한다. 신뢰할 수 없는
+  경계에서만 검증하고, 내부 함수 간에는 타입으로 충분하다.
+- 컴포넌트는 기본적으로 서버 컴포넌트. 상호작용(폼, 클라이언트 상태)이 필요할 때만
+  `"use client"`.
+- 테스트는 구현 파일과 같은 디렉토리에 `*.test.tsx` / `*.test.ts`로 둔다.
+
+## 명령어
+- `npm run dev` — 개발 서버
+- `npm run build` — 프로덕션 빌드
+- `npm run lint` — ESLint
+- `npm run test` — Jest
+- `npm run db:generate` — 스키마 변경으로부터 마이그레이션 생성
+- `npm run db:migrate` — 마이그레이션 적용
+- `npm run db:studio` — Drizzle Studio

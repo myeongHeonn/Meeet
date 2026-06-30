@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Meeet
 
-## Getting Started
+미팅/일정 스케줄링 서비스.
 
-First, run the development server:
+## 스택
+Next.js 15 (App Router) · TypeScript · React 19 · Tailwind CSS 4 · Drizzle ORM ·
+Postgres · Zod · Jest + React Testing Library · Vercel
+
+## 시작하기
 
 ```bash
+cp .env.example .env.local   # DATABASE_URL 설정
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+http://localhost:3000 에서 확인.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 개발 방식
+이 프로젝트는 SDD(Spec-Driven Development)로 개발한다. 기능을 추가하기 전에
+`specs/` 디렉토리를 먼저 읽어볼 것. 자세한 워크플로우는 [AGENTS.md](./AGENTS.md) 참고.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 명령어
+| 명령 | 설명 |
+|---|---|
+| `npm run dev` | 개발 서버 |
+| `npm run build` | 프로덕션 빌드 |
+| `npm run lint` | ESLint |
+| `npm run test` | Jest |
+| `npm run db:generate` | Drizzle 마이그레이션 생성 |
+| `npm run db:migrate` | 마이그레이션 적용 |
+| `npm run db:studio` | Drizzle Studio |

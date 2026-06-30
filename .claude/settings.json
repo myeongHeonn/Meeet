@@ -4,7 +4,15 @@
       "Bash(npm -v)",
       "Bash(npx --yes create-next-app@latest . --typescript --tailwind --app --eslint --src-dir --import-alias \"@/*\" --use-npm --skip-install)",
       "Read(//Users/omyeongheon/workspace/**)",
-      "Bash(npx --yes create-next-app@latest meeet --typescript --tailwind --app --eslint --src-dir --import-alias \"@/*\" --use-npm)"
+      "Bash(npx --yes create-next-app@latest meeet --typescript --tailwind --app --eslint --src-dir --import-alias \"@/*\" --use-npm)",
+      "Bash(diskutil info *)",
+      "Bash(npm view *)",
+      "Bash(npm install *)",
+      "Bash(npx next *)",
+      "Bash(npm audit *)",
+      "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('/Users/omyeongheon/workspace/Meeet/node_modules/eslint-config-next/package.json'\\).exports, null, 2\\)\\)\")",
+      "Bash(git remote *)",
+      "Bash(git add *)"
     ]
   }
 }
