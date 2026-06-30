@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TimeGrid } from "@/app/components/time-grid";
 import {
@@ -53,6 +53,36 @@ export function PollView({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  // 본인 편집 토큰. 최초 제출 시 발급받아 localStorage에 저장하고, 재제출 시 동봉한다(FR-7).
+  const editTokenRef = useRef<string | null>(null);
+  const storageKey = `meeet:poll:${token}`;
+
+  // 마운트 시 저장된 토큰으로 내 이전 응답(이름·선택)을 프리필한다(FR-7a). 최초 1회.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) return;
+    try {
+      const saved = JSON.parse(raw) as { editToken?: string; participantId?: string };
+      editTokenRef.current = saved.editToken ?? null;
+      const me = participants.find((p) => p.id === saved.participantId);
+      if (me) {
+        setName(me.name);
+        setSelected(
+          new Set(
+            availabilities
+              .filter((a) => a.participantId === saved.participantId)
+              .map((a) => a.pollSlotId),
+          ),
+        );
+      }
+    } catch {
+      // 손상된 값은 무시한다.
+    }
+    // 최초 1회만 프리필한다(이후 입력/제출은 사용자 주도).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const heatmap = useMemo(
     () => aggregateHeatmap(participants, availabilities),
     [participants, availabilities],
@@ -67,9 +97,27 @@ export function PollView({
       const res = await fetch(`/api/polls/${token}/responses`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), availableSlotIds: [...selected] }),
+        body: JSON.stringify({
+          name: name.trim(),
+          availableSlotIds: [...selected],
+          editToken: editTokenRef.current ?? undefined,
+        }),
       });
       if (res.ok) {
+        const data = (await res.json()) as {
+          editToken?: string;
+          participantId?: string;
+        };
+        if (data.editToken && data.participantId) {
+          editTokenRef.current = data.editToken;
+          window.localStorage.setItem(
+            storageKey,
+            JSON.stringify({
+              editToken: data.editToken,
+              participantId: data.participantId,
+            }),
+          );
+        }
         setMessage("응답이 저장되었어요.");
         router.refresh();
       } else if (res.status === 409) {

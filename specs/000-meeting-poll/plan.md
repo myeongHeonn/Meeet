@@ -189,3 +189,21 @@ DB에 직접 의존하는 mutation/query는 MVP에서 통합 테스트를 두지
   문제를 일으키면, 해당 FK를 별도 `ALTER TABLE`로 분리해 적용한다(T1에서 확인).
 - **DB 연결 전제**: `db:migrate`와 모든 mutation/query는 `DATABASE_URL`로 접근 가능한
   Postgres가 있어야 동작한다. 개발은 로컬 Postgres, 운영은 추후 Vercel 환경변수로 주입한다.
+
+## 8. 개정 R1~R3: 참가자 식별을 편집 토큰으로 (spec FR-7/7a)
+
+기존 "이름 덮어쓰기"를 "익명 편집 토큰" 모델로 바꾼다. 같은 브라우저에서만 수정 가능(트레이드오프).
+
+- R1: 스키마/마이그레이션 — `participants`에 `editToken uuid not null unique default random` 추가,
+  `(pollId, name)` unique 제거(이름은 식별자 아님). `db:generate`로 ADD COLUMN(gen_random_uuid()
+  default라 기존 행 backfill됨) + DROP CONSTRAINT 마이그레이션 생성 후 로컬 적용.
+- R2: 서버 — `submitResponseSchema`에 `editToken: z.uuid().optional()`. `mutations.submitResponse`는
+  editToken이 그 폴의 참가자를 가리키면 `update`(이름 변경 포함), 아니면 `insert`. 반환을
+  `{ editToken, participantId }`로 바꾸고, 응답 Route Handler가 이를 JSON으로 돌려준다.
+- R3: 클라이언트 — `poll-view`가 마운트 시 `localStorage["meeet:poll:{token}"]`의
+  `{editToken, participantId}`를 읽어, props의 participants/availabilities에서 내 이름·선택을
+  프리필(FR-7a). 제출 시 editToken을 함께 보내고, 응답으로 받은 `{editToken, participantId}`를
+  localStorage에 저장. participantId는 공개 데이터라 노출 무해하지만 editToken은 수정 권한이므로
+  participants props에는 절대 싣지 않는다(localStorage에만).
+- 검증: 단위 테스트(validation editToken optional, poll-view 프리필) + 로컬 DB E2E
+  (test 제출 → 토큰 저장 → test1로 재제출 → 참가자 1명 유지 확인).

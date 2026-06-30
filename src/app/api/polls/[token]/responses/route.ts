@@ -21,5 +21,5 @@ export async function POST(
   if (!result.ok) {
     return NextResponse.json({ error: result.message }, { status: result.status });
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, ...result.data });
 }

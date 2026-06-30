@@ -42,6 +42,36 @@ describe("PollView (open)", () => {
   });
 });
 
+describe("PollView (prefill from edit token)", () => {
+  afterEach(() => window.localStorage.clear());
+
+  it("prefills name and selection when a saved token matches a participant", () => {
+    window.localStorage.setItem(
+      "meeet:poll:tok",
+      JSON.stringify({ editToken: "any", participantId: "p1" }),
+    );
+    render(
+      <PollView
+        {...baseProps}
+        poll={{ title: "회식", description: null, status: "open", confirmedSlotId: null }}
+      />,
+    );
+    expect(screen.getByLabelText("이름")).toHaveValue("영희");
+    expect(screen.getByLabelText("slot-s1")).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByLabelText("slot-s2")).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("does not prefill when there is no saved token", () => {
+    render(
+      <PollView
+        {...baseProps}
+        poll={{ title: "회식", description: null, status: "open", confirmedSlotId: null }}
+      />,
+    );
+    expect(screen.getByLabelText("이름")).toHaveValue("");
+  });
+});
+
 describe("PollView (confirmed)", () => {
   it("hides the response form and shows the confirmed slot", () => {
     render(

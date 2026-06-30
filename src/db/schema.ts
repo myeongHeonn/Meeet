@@ -42,21 +42,18 @@ export const pollSlots = pgTable(
   (t) => [unique("poll_slots_poll_starts_unique").on(t.pollId, t.startsAt)],
 );
 
-// 폴에 참여한 사람. 계정이 아니라 이름만으로 식별한다(같은 폴 내 이름 유일).
-export const participants = pgTable(
-  "participants",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    pollId: uuid("poll_id")
-      .notNull()
-      .references(() => meetingPolls.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (t) => [unique("participants_poll_name_unique").on(t.pollId, t.name)],
-);
+// 폴에 참여한 사람. 이름은 식별자가 아니며(중복 허용), 본인 식별/수정 권한은 editToken으로 한다(FR-7).
+export const participants = pgTable("participants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  pollId: uuid("poll_id")
+    .notNull()
+    .references(() => meetingPolls.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  editToken: uuid("edit_token").notNull().unique().defaultRandom(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 // 참가자가 "가능"으로 칠한 칸. 가능한 칸만 행으로 존재한다(불가능은 행 없음).
 export const participantAvailabilities = pgTable(

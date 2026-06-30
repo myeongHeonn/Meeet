@@ -146,6 +146,25 @@ describe("submitResponseSchema", () => {
         .success,
     ).toBe(false);
   });
+
+  it("accepts an optional editToken", () => {
+    const r = submitResponseSchema.safeParse({
+      name: "민허",
+      availableSlotIds: [uuid],
+      editToken: uuid2,
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects a non-uuid editToken", () => {
+    expect(
+      submitResponseSchema.safeParse({
+        name: "민허",
+        availableSlotIds: [],
+        editToken: "not-a-uuid",
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe("confirmPollSchema", () => {

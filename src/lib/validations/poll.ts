@@ -88,6 +88,8 @@ export const submitResponseSchema = z.object({
   availableSlotIds: z
     .array(z.uuid())
     .transform((ids) => [...new Set(ids)]),
+  // 본인 식별용 편집 토큰(FR-7). 최초 제출엔 없고, 재제출 시 동봉한다.
+  editToken: z.uuid().optional(),
 });
 
 export const confirmPollSchema = z.object({

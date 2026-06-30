@@ -47,11 +47,12 @@ export async function createPoll(
   return { token };
 }
 
-// 참가자 응답 제출/수정(FR-6,7). 같은 이름이면 기존 응답을 완전히 교체한다(부분 갱신 아님).
+// 참가자 응답 제출/수정(FR-6,7). 편집 토큰이 그 폴의 참가자를 가리키면 갱신(이름 변경 포함),
+// 아니면 새 참가자 생성. 선택은 항상 완전 교체한다(부분 갱신 아님).
 export async function submitResponse(
   token: string,
   input: SubmitResponseInput,
-): Promise<MutationResult> {
+): Promise<MutationResult<{ editToken: string; participantId: string }>> {
   return db.transaction(async (tx) => {
     const [poll] = await tx
       .select()
@@ -69,15 +70,32 @@ export async function submitResponse(
     if (!allSlotsBelongToPoll(input.availableSlotIds, slots.map((s) => s.id)))
       return { ok: false, status: 400, message: "유효하지 않은 시간 칸입니다" };
 
-    // (pollId, name) 기준 upsert로 participantId 확보.
-    const [participant] = await tx
-      .insert(participants)
-      .values({ pollId: poll.id, name: input.name })
-      .onConflictDoUpdate({
-        target: [participants.pollId, participants.name],
-        set: { name: input.name },
-      })
-      .returning({ id: participants.id });
+    // 편집 토큰이 이 폴의 참가자를 가리키면 그를 갱신, 아니면(없음/무효/타폴) 새로 생성.
+    let participant: { id: string; editToken: string } | undefined;
+    if (input.editToken) {
+      [participant] = await tx
+        .select({ id: participants.id, editToken: participants.editToken })
+        .from(participants)
+        .where(
+          and(
+            eq(participants.editToken, input.editToken),
+            eq(participants.pollId, poll.id),
+          ),
+        )
+        .limit(1);
+    }
+
+    if (participant) {
+      await tx
+        .update(participants)
+        .set({ name: input.name })
+        .where(eq(participants.id, participant.id));
+    } else {
+      [participant] = await tx
+        .insert(participants)
+        .values({ pollId: poll.id, name: input.name })
+        .returning({ id: participants.id, editToken: participants.editToken });
+    }
 
     // 기존 선택 전부 삭제 → 새 선택 삽입(완전 교체).
     await tx
@@ -86,13 +104,16 @@ export async function submitResponse(
     if (input.availableSlotIds.length > 0) {
       await tx.insert(participantAvailabilities).values(
         input.availableSlotIds.map((slotId) => ({
-          participantId: participant.id,
+          participantId: participant!.id,
           pollSlotId: slotId,
         })),
       );
     }
 
-    return { ok: true, data: undefined };
+    return {
+      ok: true,
+      data: { editToken: participant.editToken, participantId: participant.id },
+    };
   });
 }
 
