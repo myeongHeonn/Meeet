@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getZonedParts, parseHHmm } from "@/lib/datetime";
+import { getZonedParts, hhmmToMinutes, pad2 } from "@/lib/datetime";
 
 // 격자 폭증 방어(spec §8, plan §7). MAX_DATES는 날짜 개수 상한, MAX_CELLS는 총 칸 상한.
 // 31일 × 하루 최대 47칸 = 1457이므로 MAX_CELLS는 1000으로 두어 실질적으로 동작하게 한다
@@ -26,17 +26,8 @@ const ianaTimeZone = z.string().refine(
   { message: "유효한 타임존이 아닙니다" },
 );
 
-function minutesOf(hhmmValue: string): number {
-  const { hour, minute } = parseHHmm(hhmmValue);
-  return hour * 60 + minute;
-}
-
 function cellsPerDay(startTime: string, endTime: string): number {
-  return (minutesOf(endTime) - minutesOf(startTime)) / SLOT_MINUTES;
-}
-
-function pad2(n: number): string {
-  return String(n).padStart(2, "0");
+  return (hhmmToMinutes(endTime) - hhmmToMinutes(startTime)) / SLOT_MINUTES;
 }
 
 // timeZone 기준 "오늘"(YYYY-MM-DD). ISO date 문자열은 사전순=시간순이라 비교에 쓴다.

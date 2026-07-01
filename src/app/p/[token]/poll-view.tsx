@@ -9,6 +9,7 @@ import {
   type ParticipantRow,
 } from "@/lib/polls/aggregate";
 import { getZonedParts } from "@/lib/datetime";
+import { withSetItem } from "@/lib/collections";
 
 interface PollSummary {
   title: string;
@@ -203,12 +204,7 @@ export function PollView({
               value={selected}
               disabled={name.trim().length === 0}
               onToggle={(slotId, next) =>
-                setSelected((prev) => {
-                  const s = new Set(prev);
-                  if (next) s.add(slotId);
-                  else s.delete(slotId);
-                  return s;
-                })
+                setSelected((prev) => withSetItem(prev, slotId, next))
               }
             />
             <button

@@ -68,3 +68,14 @@ export function parseHHmm(value: string): { hour: number; minute: number } {
   const [h, m] = value.split(":");
   return { hour: Number.parseInt(h, 10), minute: Number.parseInt(m, 10) };
 }
+
+// "HH:mm" → 자정 기준 분 수(예: "09:30" → 570).
+export function hhmmToMinutes(value: string): number {
+  const { hour, minute } = parseHHmm(value);
+  return hour * 60 + minute;
+}
+
+// 숫자를 2자리로 0 패딩("9" → "09"). 날짜/시간 키 생성에 쓴다.
+export function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}

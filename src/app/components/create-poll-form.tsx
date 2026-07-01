@@ -2,17 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { DatePickerCalendar } from "./date-picker-calendar";
+import { hhmmToMinutes, pad2 } from "@/lib/datetime";
+import { toggleSetItem } from "@/lib/collections";
 
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const h = Math.floor(i / 2);
   const m = i % 2 ? "30" : "00";
-  return `${String(h).padStart(2, "0")}:${m}`;
+  return `${pad2(h)}:${m}`;
 });
-
-function minutesOf(hhmm: string): number {
-  const [h, m] = hhmm.split(":").map(Number);
-  return h * 60 + m;
-}
 
 export function CreatePollForm() {
   const [title, setTitle] = useState("");
@@ -25,21 +22,17 @@ export function CreatePollForm() {
   const [token, setToken] = useState<string | null>(null);
 
   const cellsPerDay = useMemo(() => {
-    const diff = minutesOf(endTime) - minutesOf(startTime);
+    const diff = hhmmToMinutes(endTime) - hhmmToMinutes(startTime);
     return diff > 0 ? diff / 30 : 0;
   }, [startTime, endTime]);
   const totalCells = dates.size * cellsPerDay;
 
   const valid =
-    title.trim().length > 0 && dates.size > 0 && minutesOf(endTime) > minutesOf(startTime);
+    title.trim().length > 0 &&
+    dates.size > 0 &&
+    hhmmToMinutes(endTime) > hhmmToMinutes(startTime);
 
-  const toggleDate = (key: string) =>
-    setDates((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  const toggleDate = (key: string) => setDates((prev) => toggleSetItem(prev, key));
 
   async function handleSubmit() {
     setSubmitting(true);

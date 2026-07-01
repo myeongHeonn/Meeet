@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { pad2 } from "@/lib/datetime";
 
 interface Props {
   selected: Set<string>; // "YYYY-MM-DD" (브라우저 로컬 날짜)
@@ -8,10 +9,6 @@ interface Props {
 }
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-
-function pad2(n: number): string {
-  return String(n).padStart(2, "0");
-}
 
 function toKey(year: number, month0: number, day: number): string {
   return `${year}-${pad2(month0 + 1)}-${pad2(day)}`;

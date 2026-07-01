@@ -1,4 +1,4 @@
-import { getZonedParts } from "@/lib/datetime";
+import { getZonedParts, pad2 } from "@/lib/datetime";
 
 export interface LayoutSlot {
   id: string;
@@ -9,10 +9,6 @@ export interface GridLayout {
   dateKeys: string[]; // "YYYY-MM-DD" (뷰어 타임존 기준), 오름차순
   timeKeys: string[]; // "HH:mm" (뷰어 타임존 기준), 오름차순
   cell: Map<string, string>; // `${dateKey}__${timeKey}` -> slotId
-}
-
-function pad2(n: number): string {
-  return String(n).padStart(2, "0");
 }
 
 export function cellKey(dateKey: string, timeKey: string): string {

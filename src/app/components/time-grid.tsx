@@ -2,11 +2,7 @@
 
 import { useRef } from "react";
 import { buildGridLayout, cellKey, type LayoutSlot } from "@/lib/polls/layout";
-
-export interface SlotTally {
-  count: number;
-  names: string[];
-}
+import type { SlotTally } from "@/lib/polls/aggregate";
 
 interface CommonProps {
   slots: LayoutSlot[];
