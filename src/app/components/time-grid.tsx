@@ -135,7 +135,7 @@ export function TimeGrid(props: TimeGridProps) {
 
   return (
     <div
-      className="overflow-auto select-none w-fit max-w-full touch-manipulation md:max-h-[55vh]"
+      className="inline-block align-top overflow-auto select-none max-w-full max-h-[55vh] touch-manipulation"
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onPointerLeave={onContainerLeave}
