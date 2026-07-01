@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, lte } from "drizzle-orm";
 import { db } from "@/db";
 import {
   meetingPolls,
@@ -8,7 +8,8 @@ import {
 } from "@/db/schema";
 import { generatePublicToken } from "@/lib/token";
 import { expandSlots } from "@/lib/polls/grid";
-import { allSlotsBelongToPoll } from "@/lib/polls/rules";
+import { computeExpiresAt } from "@/lib/polls/expiry";
+import { allSlotsBelongToPoll, isPollExpired } from "@/lib/polls/rules";
 import type {
   CreatePollInput,
   SubmitResponseInput,
@@ -24,6 +25,7 @@ export async function createPoll(
 ): Promise<{ token: string }> {
   const slotTimes = expandSlots(input);
   const token = generatePublicToken();
+  const expiresAt = computeExpiresAt(input.dates, input.timeZone);
 
   await db.transaction(async (tx) => {
     const [poll] = await tx
@@ -32,6 +34,7 @@ export async function createPoll(
         title: input.title,
         description: input.description ?? null,
         publicToken: token,
+        expiresAt,
       })
       .returning({ id: meetingPolls.id });
 
@@ -59,7 +62,8 @@ export async function submitResponse(
       .from(meetingPolls)
       .where(eq(meetingPolls.publicToken, token))
       .limit(1);
-    if (!poll) return { ok: false, status: 404, message: "폴을 찾을 수 없습니다" };
+    if (!poll || isPollExpired(poll.expiresAt))
+      return { ok: false, status: 404, message: "폴을 찾을 수 없습니다" };
 
     const slots = await tx
       .select({ id: pollSlots.id })
@@ -113,4 +117,14 @@ export async function submitResponse(
       data: { editToken: participant.editToken, participantId: participant.id },
     };
   });
+}
+
+// 만료된 폴을 실제로 삭제한다(FR-13, Cron 정리). 자식(슬롯·참가자·응답)은 FK cascade로 함께
+// 삭제된다. 삭제된 폴 수를 반환한다.
+export async function deleteExpiredPolls(now: Date = new Date()): Promise<number> {
+  const deleted = await db
+    .delete(meetingPolls)
+    .where(lte(meetingPolls.expiresAt, now))
+    .returning({ id: meetingPolls.id });
+  return deleted.length;
 }

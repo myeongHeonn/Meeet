@@ -6,6 +6,7 @@ import {
   participants,
   pollSlots,
 } from "@/db/schema";
+import { isPollExpired } from "@/lib/polls/rules";
 
 export interface PollData {
   poll: typeof meetingPolls.$inferSelect;
@@ -21,7 +22,8 @@ export async function getPollByToken(token: string): Promise<PollData | null> {
     .from(meetingPolls)
     .where(eq(meetingPolls.publicToken, token))
     .limit(1);
-  if (!poll) return null;
+  // 만료된 폴은 아직 삭제 전이라도 없는 것으로 취급한다(→404, FR-13).
+  if (!poll || isPollExpired(poll.expiresAt)) return null;
 
   const slots = await db
     .select()

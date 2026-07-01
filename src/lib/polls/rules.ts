@@ -9,3 +9,8 @@ export function allSlotsBelongToPoll(
   const set = pollSlotIds instanceof Set ? pollSlotIds : new Set(pollSlotIds);
   return requestedSlotIds.every((id) => set.has(id));
 }
+
+// 폴이 만료됐는가(FR-13). 만료 시각이 현재 시각 이하이면 만료로 본다(경계 포함).
+export function isPollExpired(expiresAt: Date, now: Date = new Date()): boolean {
+  return expiresAt.getTime() <= now.getTime();
+}

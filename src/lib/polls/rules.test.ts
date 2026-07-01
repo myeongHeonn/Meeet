@@ -1,4 +1,4 @@
-import { allSlotsBelongToPoll } from "./rules";
+import { allSlotsBelongToPoll, isPollExpired } from "./rules";
 
 describe("allSlotsBelongToPoll", () => {
   const pollSlots = ["s1", "s2", "s3"];
@@ -17,5 +17,21 @@ describe("allSlotsBelongToPoll", () => {
 
   it("accepts a Set as the poll slot collection", () => {
     expect(allSlotsBelongToPoll(["s2"], new Set(pollSlots))).toBe(true);
+  });
+});
+
+describe("isPollExpired", () => {
+  const now = new Date("2026-07-13T00:00:00.000Z");
+
+  it("is false when expiry is in the future", () => {
+    expect(isPollExpired(new Date("2026-07-13T00:00:01.000Z"), now)).toBe(false);
+  });
+
+  it("is true when expiry is in the past", () => {
+    expect(isPollExpired(new Date("2026-07-12T23:59:59.000Z"), now)).toBe(true);
+  });
+
+  it("is true at the exact boundary (expiry == now)", () => {
+    expect(isPollExpired(new Date("2026-07-13T00:00:00.000Z"), now)).toBe(true);
   });
 });

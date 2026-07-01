@@ -14,6 +14,9 @@ export const meetingPolls = pgTable("meeting_polls", {
   title: text("title").notNull(),
   description: text("description"),
   publicToken: text("public_token").notNull().unique(),
+  // 만료 시각(UTC). 마지막 후보 날짜 다음날 0시(생성자 TZ)를 생성 시점에 계산해 저장한다(FR-13).
+  // 지나면 조회/응답을 404로 막고, Cron 정리가 실제 삭제한다.
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
