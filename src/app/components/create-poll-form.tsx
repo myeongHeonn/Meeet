@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { DatePickerCalendar } from "./date-picker-calendar";
 import { hhmmToMinutes, pad2 } from "@/lib/datetime";
 import { toggleSetItem } from "@/lib/collections";
@@ -28,12 +28,6 @@ export function CreatePollForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
-
-  const cellsPerDay = useMemo(() => {
-    const diff = hhmmToMinutes(endTime) - hhmmToMinutes(startTime);
-    return diff > 0 ? diff / 30 : 0;
-  }, [startTime, endTime]);
-  const totalCells = dates.size * cellsPerDay;
 
   const valid =
     title.trim().length > 0 &&
@@ -158,10 +152,6 @@ export function CreatePollForm() {
           <span className="text-gray-400 text-xs">30분 단위</span>
         </div>
       </div>
-
-      <p className="text-xs text-gray-400">
-        {dates.size}일 × {startTime}–{endTime} = 칸 {totalCells}개
-      </p>
 
       {error && <p className="text-sm text-red-500">{error}</p>}
 
