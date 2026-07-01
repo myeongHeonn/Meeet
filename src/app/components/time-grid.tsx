@@ -139,7 +139,7 @@ export function TimeGrid(props: TimeGridProps) {
             : `0/${props.totalParticipants}명`
         }
         className={`flex h-7 w-20 cursor-pointer items-center justify-center border border-white text-[10px] ${ratio > 0.5 ? "text-white" : "text-gray-900"} ${
-          active ? "outline outline-2 outline-blue-500" : ""
+          active ? "outline outline-2 -outline-offset-2 outline-violet-500" : ""
         }`}
         style={{
           backgroundColor:
@@ -155,7 +155,7 @@ export function TimeGrid(props: TimeGridProps) {
 
   return (
     <div
-      className="overflow-auto select-none max-h-[55vh]"
+      className="overflow-auto select-none max-h-[55vh] w-fit max-w-full"
       style={props.mode === "edit" ? { touchAction: "pan-x" } : undefined}
       onPointerUp={() => {
         // 터치 탭: 방향 판정 전 손가락을 뗐으면 단순 탭으로 처리해 선택한다.
