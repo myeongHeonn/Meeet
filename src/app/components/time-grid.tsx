@@ -206,7 +206,7 @@ export function TimeGrid(props: TimeGridProps) {
             {layout.dateKeys.map((dk) => (
               <th
                 key={dk}
-                className="px-2 py-1 font-medium whitespace-nowrap text-gray-700 sticky top-0 z-10 bg-white"
+                className="px-2 py-1 text-sm font-medium whitespace-nowrap text-gray-700 sticky top-0 z-10 bg-white"
               >
                 {formatDateLabel(dk)}
               </th>
@@ -216,7 +216,7 @@ export function TimeGrid(props: TimeGridProps) {
         <tbody>
           {layout.timeKeys.map((tk) => (
             <tr key={tk}>
-              <td className="pr-2 text-right align-top text-gray-500 whitespace-nowrap sticky left-0 z-[1] bg-white">
+              <td className="pr-2 text-right align-top text-gray-500 whitespace-nowrap sticky left-0 z-[1] bg-white text-sm">
                 {tk}
               </td>
               {layout.dateKeys.map((dk) => {
