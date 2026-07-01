@@ -41,7 +41,7 @@ export function DatePickerCalendar({ selected, onToggle }: Props) {
     });
 
   return (
-    <div className="inline-block rounded-xl border border-gray-200 p-4">
+    <div className="w-full rounded-xl border border-gray-200 p-4">
       <div className="mb-3 flex items-center justify-between gap-4">
         <button
           type="button"
@@ -64,7 +64,7 @@ export function DatePickerCalendar({ selected, onToggle }: Props) {
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-xs">
+      <div className="grid grid-cols-7 gap-x-1 gap-y-1 text-center text-xs">
         {WEEKDAYS.map((w) => (
           <div key={w} className="py-1 text-xs font-medium text-gray-400">
             {w}
@@ -82,7 +82,7 @@ export function DatePickerCalendar({ selected, onToggle }: Props) {
               disabled={isPast}
               aria-pressed={isSelected}
               onClick={() => onToggle(key)}
-              className={`h-8 w-8 rounded-full text-sm font-medium transition ${
+              className={`aspect-square w-full rounded-full text-sm font-medium transition ${
                 isPast
                   ? "cursor-not-allowed text-gray-300"
                   : isSelected
