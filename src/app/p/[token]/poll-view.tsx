@@ -209,22 +209,30 @@ export function PollView({
               setSelected((prev) => withSetItem(prev, slotId, next))
             }
           />
-          <div className="sticky bottom-0 bg-white pt-2 pb-1 flex items-center justify-between gap-3">
-            <button
-              type="button"
-              disabled={busy || name.trim().length === 0}
-              onClick={submitResponse}
-              className="rounded-full bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {busy ? "저장 중…" : "응답 제출"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setStep("results")}
-              className="text-sm text-gray-400 hover:text-gray-600 md:hidden"
-            >
-              그룹 현황 보기 →
-            </button>
+          <div className="sticky bottom-0 bg-white pt-2 pb-1 space-y-1.5">
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                disabled={busy || name.trim().length === 0}
+                onClick={submitResponse}
+                className="flex items-center gap-2 rounded-full bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {busy && (
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                )}
+                {busy ? "적용 중…" : "응답 제출"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep("results")}
+                className="text-sm text-gray-400 hover:text-gray-600 md:hidden"
+              >
+                그룹 현황 보기 →
+              </button>
+            </div>
+            {busy && (
+              <p className="text-sm text-gray-500">응답을 적용하는 중입니다. 잠시만 기다려주세요.</p>
+            )}
           </div>
         </section>
 

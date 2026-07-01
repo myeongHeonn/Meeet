@@ -155,14 +155,22 @@ export function CreatePollForm() {
 
       {error && <p className="text-sm text-red-500">{error}</p>}
 
-      <button
-        type="button"
-        disabled={!valid || submitting}
-        onClick={handleSubmit}
-        className="rounded-full bg-gray-900 px-7 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {submitting ? "만드는 중…" : "폴 만들기"}
-      </button>
+      <div className="space-y-2">
+        <button
+          type="button"
+          disabled={!valid || submitting}
+          onClick={handleSubmit}
+          className="flex items-center gap-2 rounded-full bg-gray-900 px-7 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {submitting && (
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+          )}
+          {submitting ? "만드는 중…" : "폴 만들기"}
+        </button>
+        {submitting && (
+          <p className="text-sm text-gray-500">이벤트를 만드는 중입니다. 잠시만 기다려주세요.</p>
+        )}
+      </div>
     </div>
   );
 }
