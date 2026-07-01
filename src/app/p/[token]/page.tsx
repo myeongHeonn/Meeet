@@ -12,7 +12,7 @@ export default async function PollPage({
   if (!data) notFound();
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-12 md:py-16">
+    <main className="mx-auto max-w-4xl px-4 pt-4 pb-8 md:py-12">
       <PollView
         token={token}
         poll={{

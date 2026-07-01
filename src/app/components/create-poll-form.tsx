@@ -22,7 +22,6 @@ const selectClass =
 
 export function CreatePollForm() {
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [dates, setDates] = useState<Set<string>>(new Set());
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("17:00");
@@ -49,7 +48,6 @@ export function CreatePollForm() {
     try {
       const res = await postJson<{ token: string }>("/api/polls", {
         title: title.trim(),
-        description: description.trim() || undefined,
         dates: [...dates],
         startTime,
         endTime,
@@ -105,7 +103,7 @@ export function CreatePollForm() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="space-y-1.5">
         <label className="block text-sm font-medium" htmlFor="title">
           제목 <span className="text-gray-400">*</span>
@@ -117,21 +115,6 @@ export function CreatePollForm() {
           maxLength={200}
           className={inputClass}
           placeholder="예: 팀 회식 일정"
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <label className="block text-sm font-medium" htmlFor="description">
-          설명{" "}
-          <span className="font-normal text-gray-400">(선택)</span>
-        </label>
-        <input
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          maxLength={2000}
-          className={inputClass}
-          placeholder="참가자에게 전달할 내용을 입력하세요"
         />
       </div>
 

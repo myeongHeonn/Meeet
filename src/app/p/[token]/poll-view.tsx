@@ -209,7 +209,7 @@ export function PollView({
               setSelected((prev) => withSetItem(prev, slotId, next))
             }
           />
-          <div className="flex items-center justify-between gap-3">
+          <div className="sticky bottom-0 bg-white pt-2 pb-1 flex items-center justify-between gap-3">
             <button
               type="button"
               disabled={busy || name.trim().length === 0}

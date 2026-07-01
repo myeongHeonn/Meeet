@@ -155,7 +155,7 @@ export function TimeGrid(props: TimeGridProps) {
 
   return (
     <div
-      className="overflow-x-auto select-none"
+      className="overflow-auto select-none max-h-[55vh]"
       style={props.mode === "edit" ? { touchAction: "pan-x" } : undefined}
       onPointerUp={() => {
         // 터치 탭: 방향 판정 전 손가락을 뗐으면 단순 탭으로 처리해 선택한다.
@@ -202,11 +202,11 @@ export function TimeGrid(props: TimeGridProps) {
       <table className="border-separate border-spacing-0 text-xs">
         <thead>
           <tr>
-            <th className="w-14" />
+            <th className="w-14 sticky top-0 left-0 z-20 bg-white" />
             {layout.dateKeys.map((dk) => (
               <th
                 key={dk}
-                className="px-2 py-1 font-medium whitespace-nowrap text-gray-700"
+                className="px-2 py-1 font-medium whitespace-nowrap text-gray-700 sticky top-0 z-10 bg-white"
               >
                 {formatDateLabel(dk)}
               </th>
@@ -216,7 +216,7 @@ export function TimeGrid(props: TimeGridProps) {
         <tbody>
           {layout.timeKeys.map((tk) => (
             <tr key={tk}>
-              <td className="pr-2 text-right align-top text-gray-500 whitespace-nowrap">
+              <td className="pr-2 text-right align-top text-gray-500 whitespace-nowrap sticky left-0 z-[1] bg-white">
                 {tk}
               </td>
               {layout.dateKeys.map((dk) => {
