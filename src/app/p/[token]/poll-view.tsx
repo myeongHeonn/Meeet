@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TimeGrid } from "@/app/components/time-grid";
 import {
   aggregateHeatmap,
@@ -11,7 +10,7 @@ import {
 } from "@/lib/polls/aggregate";
 import { getZonedParts } from "@/lib/datetime";
 import { withSetItem } from "@/lib/collections";
-import { postJson } from "@/lib/api-client";
+import { getJson, postJson } from "@/lib/api-client";
 
 interface PollSummary {
   title: string;
@@ -37,16 +36,43 @@ export function PollView({
   token,
   poll,
   slots,
-  participants,
-  availabilities,
+  participants: initialParticipants,
+  availabilities: initialAvailabilities,
 }: Props) {
-  const router = useRouter();
+  // 그룹 현황은 다른 참가자의 응답을 반영해야 하므로 state로 두고 주기적으로 갱신한다(FR-8).
+  const [participants, setParticipants] = useState(initialParticipants);
+  const [availabilities, setAvailabilities] = useState(initialAvailabilities);
 
   // SSR/첫 렌더는 UTC로 시작하고, 마운트 후 뷰어 타임존으로 갱신해 hydration mismatch를 피한다(FR-12).
   const [timeZone, setTimeZone] = useState("UTC");
   useEffect(() => {
     setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
   }, []);
+
+  // 최신 참가자·가용시간을 서버에서 다시 읽어 그룹 현황에 반영한다. 폴링/제출 직후 공용.
+  const refetch = useCallback(async () => {
+    const res = await getJson<{
+      participants: ParticipantRow[];
+      availabilities: AvailabilityRow[];
+    }>(`/api/polls/${token}`);
+    if (res.ok && res.data) {
+      setParticipants(res.data.participants);
+      setAvailabilities(res.data.availabilities);
+    }
+  }, [token]);
+
+  // 탭이 보이는 동안 5초마다 폴링하고, 탭을 다시 볼 때 즉시 한 번 갱신한다(새로고침 없이 실시간 반영).
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState === "visible") refetch();
+    };
+    const id = setInterval(tick, 5000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [refetch]);
 
   const [step, setStep] = useState<"edit" | "results">("edit");
 
@@ -135,7 +161,7 @@ export function PollView({
         }
         setMessage("응답이 저장되었어요.");
         setStep("results");
-        router.refresh();
+        await refetch();
       } else {
         setMessage("응답 저장에 실패했어요.");
       }

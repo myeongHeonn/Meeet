@@ -19,3 +19,10 @@ export async function postJson<T = unknown>(
   const data = res.ok ? ((await res.json().catch(() => null)) as T | null) : null;
   return { ok: res.ok, status: res.status, data };
 }
+
+// 최신 데이터 조회용 GET. 항상 서버에서 다시 읽도록 캐시를 끈다(실시간 폴링, FR-8).
+export async function getJson<T = unknown>(url: string): Promise<PostJsonResult<T>> {
+  const res = await fetch(url, { cache: "no-store" });
+  const data = res.ok ? ((await res.json().catch(() => null)) as T | null) : null;
+  return { ok: res.ok, status: res.status, data };
+}
