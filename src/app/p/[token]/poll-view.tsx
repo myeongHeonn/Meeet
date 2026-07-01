@@ -89,6 +89,12 @@ export function PollView({
     [participants, availabilities],
   );
 
+  const slotById = useMemo(() => new Map(slots.map((s) => [s.id, s])), [slots]);
+  const slotLabel = (slotId: string | null) => {
+    const slot = slotId ? slotById.get(slotId) : undefined;
+    return slot ? formatSlotLabel(slot.startsAt, timeZone) : "";
+  };
+
   const isOpen = poll.status === "open";
 
   async function submitResponse() {
@@ -174,11 +180,7 @@ export function PollView({
         {poll.description && <p className="text-sm text-gray-600">{poll.description}</p>}
         {!isOpen && poll.confirmedSlotId && (
           <p className="text-sm font-medium text-blue-700">
-            ✓ 확정:{" "}
-            {formatSlotLabel(
-              slots.find((s) => s.id === poll.confirmedSlotId)?.startsAt ?? "",
-              timeZone,
-            )}
+            ✓ 확정: {slotLabel(poll.confirmedSlotId)}
           </p>
         )}
       </header>
@@ -241,12 +243,7 @@ export function PollView({
                 onClick={confirm}
                 className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
               >
-                {confirmSlot
-                  ? `${formatSlotLabel(
-                      slots.find((s) => s.id === confirmSlot)?.startsAt ?? "",
-                      timeZone,
-                    )}(으)로 확정`
-                  : "이 시간으로 확정"}
+                {confirmSlot ? `${slotLabel(confirmSlot)}(으)로 확정` : "이 시간으로 확정"}
               </button>
             </div>
           )}
