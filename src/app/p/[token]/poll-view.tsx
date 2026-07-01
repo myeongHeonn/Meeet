@@ -10,6 +10,7 @@ import {
 } from "@/lib/polls/aggregate";
 import { getZonedParts } from "@/lib/datetime";
 import { withSetItem } from "@/lib/collections";
+import { postJson } from "@/lib/api-client";
 
 interface PollSummary {
   title: string;
@@ -101,21 +102,17 @@ export function PollView({
     setBusy(true);
     setMessage(null);
     try {
-      const res = await fetch(`/api/polls/${token}/responses`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
+      const res = await postJson<{ editToken?: string; participantId?: string }>(
+        `/api/polls/${token}/responses`,
+        {
           name: name.trim(),
           availableSlotIds: [...selected],
           editToken: editTokenRef.current ?? undefined,
-        }),
-      });
+        },
+      );
       if (res.ok) {
-        const data = (await res.json()) as {
-          editToken?: string;
-          participantId?: string;
-        };
-        if (data.editToken && data.participantId) {
+        const data = res.data;
+        if (data?.editToken && data.participantId) {
           editTokenRef.current = data.editToken;
           window.localStorage.setItem(
             storageKey,
@@ -143,10 +140,8 @@ export function PollView({
     setBusy(true);
     setMessage(null);
     try {
-      const res = await fetch(`/api/polls/${token}/confirm`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ slotId: confirmSlot }),
+      const res = await postJson(`/api/polls/${token}/confirm`, {
+        slotId: confirmSlot,
       });
       if (res.ok) {
         router.refresh();

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { DatePickerCalendar } from "./date-picker-calendar";
 import { hhmmToMinutes, pad2 } from "@/lib/datetime";
 import { toggleSetItem } from "@/lib/collections";
+import { postJson } from "@/lib/api-client";
 
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const h = Math.floor(i / 2);
@@ -38,24 +39,19 @@ export function CreatePollForm() {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/polls", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim() || undefined,
-          dates: [...dates],
-          startTime,
-          endTime,
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        }),
+      const res = await postJson<{ token: string }>("/api/polls", {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        dates: [...dates],
+        startTime,
+        endTime,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
-      if (!res.ok) {
+      if (!res.ok || !res.data) {
         setError("폴 생성에 실패했습니다. 입력을 확인해주세요.");
         return;
       }
-      const data = (await res.json()) as { token: string };
-      setToken(data.token);
+      setToken(res.data.token);
     } catch {
       setError("네트워크 오류가 발생했습니다.");
     } finally {

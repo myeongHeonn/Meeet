@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { submitResponseSchema } from "@/lib/validations/poll";
 import { submitResponse } from "@/lib/polls/mutations";
+import { jsonError, parseJsonBody } from "@/lib/http";
 
 // POST /api/polls/{token}/responses — 참가자 응답 제출/수정 (인증 불필요, FR-6,7).
 export async function POST(
@@ -8,18 +9,10 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
-  const body = await req.json().catch(() => null);
-  const parsed = submitResponseSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "입력이 올바르지 않습니다", issues: parsed.error.issues },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseJsonBody(req, submitResponseSchema);
+  if (!parsed.ok) return parsed.response;
 
   const result = await submitResponse(token, parsed.data);
-  if (!result.ok) {
-    return NextResponse.json({ error: result.message }, { status: result.status });
-  }
+  if (!result.ok) return jsonError(result.status, result.message);
   return NextResponse.json({ ok: true, ...result.data });
 }
