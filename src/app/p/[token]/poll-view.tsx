@@ -48,6 +48,8 @@ export function PollView({
     setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
   }, []);
 
+  const [step, setStep] = useState<"edit" | "results">("edit");
+
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -132,6 +134,7 @@ export function PollView({
           );
         }
         setMessage("응답이 저장되었어요.");
+        setStep("results");
         router.refresh();
       } else {
         setMessage("응답 저장에 실패했어요.");
@@ -142,7 +145,7 @@ export function PollView({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <header className="space-y-1">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold">{poll.title}</h1>
@@ -153,11 +156,37 @@ export function PollView({
         {poll.description && <p className="text-sm text-gray-600">{poll.description}</p>}
       </header>
 
+      {/* 모바일 전용 탭 네비게이션 */}
+      <div className="flex border-b border-gray-200 md:hidden">
+        <button
+          type="button"
+          onClick={() => setStep("edit")}
+          className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+            step === "edit"
+              ? "border-b-2 border-green-600 text-green-600"
+              : "text-gray-500"
+          }`}
+        >
+          내 가능 시간
+        </button>
+        <button
+          type="button"
+          onClick={() => setStep("results")}
+          className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+            step === "results"
+              ? "border-b-2 border-green-600 text-green-600"
+              : "text-gray-500"
+          }`}
+        >
+          그룹 현황
+        </button>
+      </div>
+
       {message && <p className="text-sm text-gray-700">{message}</p>}
 
       <div className="grid gap-8 md:grid-cols-2">
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold">내 가능 시간 (드래그로 칠하기)</h2>
+        <section className={`min-w-0 space-y-3 ${step === "results" ? "hidden md:block" : ""}`}>
+          <h2 className="hidden text-sm font-semibold md:block">내 가능 시간</h2>
           <input
             aria-label="이름"
             value={name}
@@ -176,18 +205,36 @@ export function PollView({
               setSelected((prev) => withSetItem(prev, slotId, next))
             }
           />
-          <button
-            type="button"
-            disabled={busy || name.trim().length === 0}
-            onClick={submitResponse}
-            className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
-          >
-            응답 제출
-          </button>
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              disabled={busy || name.trim().length === 0}
+              onClick={submitResponse}
+              className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
+            >
+              응답 제출
+            </button>
+            <button
+              type="button"
+              onClick={() => setStep("results")}
+              className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 md:hidden"
+            >
+              그룹 현황 보기 →
+            </button>
+          </div>
         </section>
 
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold">그룹 현황 (히트맵)</h2>
+        <section className={`min-w-0 space-y-3 ${step === "edit" ? "hidden md:block" : ""}`}>
+          <div className="flex items-center justify-between md:block">
+            <h2 className="text-sm font-semibold">그룹 현황</h2>
+            <button
+              type="button"
+              onClick={() => setStep("edit")}
+              className="text-sm text-gray-500 hover:text-gray-700 md:hidden"
+            >
+              ← 내 가능 시간
+            </button>
+          </div>
           <TimeGrid
             mode="heatmap"
             slots={slots}
