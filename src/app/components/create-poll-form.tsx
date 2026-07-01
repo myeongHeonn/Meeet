@@ -12,6 +12,9 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   return `${pad2(h)}:${m}`;
 });
 
+// 종료 시각은 하루 끝(24:00)까지 고를 수 있다.
+const END_TIME_OPTIONS = [...TIME_OPTIONS, "24:00"];
+
 export function CreatePollForm() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -144,7 +147,7 @@ export function CreatePollForm() {
             onChange={(e) => setEndTime(e.target.value)}
             className="rounded border border-gray-300 px-2 py-1"
           >
-            {TIME_OPTIONS.map((t) => (
+            {END_TIME_OPTIONS.map((t) => (
               <option key={t} value={t}>
                 {t}
               </option>

@@ -85,6 +85,22 @@ describe("createPollSchema", () => {
     expect(r.success).toBe(true); // 47 cells, under the cap
   });
 
+  it("accepts 24:00 as the end time (until midnight)", () => {
+    const r = createPollSchema.safeParse({
+      ...validCreate,
+      startTime: "22:00",
+      endTime: "24:00",
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects 24:00 as the start time", () => {
+    expect(
+      createPollSchema.safeParse({ ...validCreate, startTime: "24:00", endTime: "24:00" })
+        .success,
+    ).toBe(false);
+  });
+
   it("rejects a grid that exceeds the cell cap (31 days × full day = 1457)", () => {
     const dates = Array.from(
       { length: 31 },

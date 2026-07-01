@@ -19,6 +19,19 @@ describe("expandSlots", () => {
     expect(slots[15].endsAt.toISOString()).toBe("2026-07-30T08:00:00.000Z");
   });
 
+  it("expands up to a 24:00 end, last slot 23:30–24:00", () => {
+    const slots = expandSlots({
+      dates: ["2026-07-30"],
+      startTime: "23:00",
+      endTime: "24:00",
+      timeZone: "Asia/Seoul",
+    });
+    expect(slots).toHaveLength(2); // 23:00–23:30, 23:30–24:00
+    // Last slot: 2026-07-30 23:30 KST = 14:30 UTC, ends at 15:00 UTC (= 00:00 KST next day).
+    expect(slots[1].startsAt.toISOString()).toBe("2026-07-30T14:30:00.000Z");
+    expect(slots[1].endsAt.toISOString()).toBe("2026-07-30T15:00:00.000Z");
+  });
+
   it("multiplies slots across multiple dates", () => {
     const slots = expandSlots({
       dates: ["2026-07-30", "2026-07-31"],

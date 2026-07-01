@@ -8,10 +8,19 @@ export const MAX_DATES = 31;
 export const MAX_CELLS = 1000;
 export const SLOT_MINUTES = 30;
 
-// "HH:mm", 30분 단위(분은 00 또는 30)만 허용.
+// "HH:mm", 30분 단위(분은 00 또는 30)만 허용. 시작 시각용.
 const hhmm = z
   .string()
   .regex(/^([01]\d|2[0-3]):(00|30)$/, "30분 단위의 HH:mm 형식이어야 합니다");
+
+// 종료 시각은 하루 끝을 뜻하는 "24:00"(자정)까지 허용한다. 슬롯 경계(exclusive)로만 쓰이므로
+// 24:00이 실제 벽시계 슬롯으로 변환되지는 않는다(grid.ts는 mins < endMin으로 펼친다).
+const hhmmEnd = z
+  .string()
+  .regex(
+    /^(([01]\d|2[0-3]):(00|30)|24:00)$/,
+    "30분 단위의 HH:mm 형식이어야 합니다(종료는 24:00까지)",
+  );
 
 // IANA 타임존 문자열. Intl이 받아들이는지로 검증한다.
 const ianaTimeZone = z.string().refine(
@@ -47,7 +56,7 @@ export const createPollSchema = z
       // 중복 제거 + 정렬(이후 격자 펼치기의 입력을 안정화).
       .transform((dates) => [...new Set(dates)].sort()),
     startTime: hhmm,
-    endTime: hhmm,
+    endTime: hhmmEnd,
     timeZone: ianaTimeZone,
   })
   .refine((v) => v.startTime < v.endTime, {
