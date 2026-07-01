@@ -1,4 +1,4 @@
-import { aggregateHeatmap } from "./aggregate";
+import { aggregateHeatmap, splitParticipantsBySlot } from "./aggregate";
 
 describe("aggregateHeatmap", () => {
   it("returns empty heatmap with no participants", () => {
@@ -47,5 +47,45 @@ describe("aggregateHeatmap", () => {
       [{ participantId: "ghost", pollSlotId: "s1" }],
     );
     expect(h.bySlot.size).toBe(0);
+  });
+});
+
+describe("splitParticipantsBySlot", () => {
+  const participants = [
+    { id: "p1", name: "철수" },
+    { id: "p2", name: "영희" },
+    { id: "p3", name: "민수" },
+  ];
+  const availabilities = [
+    { participantId: "p1", pollSlotId: "s1" },
+    { participantId: "p3", pollSlotId: "s1" },
+    { participantId: "p2", pollSlotId: "s2" },
+  ];
+
+  it("splits available vs unavailable, each sorted by name", () => {
+    const { available, unavailable } = splitParticipantsBySlot(
+      "s1",
+      participants,
+      availabilities,
+    );
+    expect(available.map((p) => p.name)).toEqual(["민수", "철수"]);
+    expect(unavailable.map((p) => p.name)).toEqual(["영희"]);
+  });
+
+  it("puts everyone in unavailable when nobody picked the slot", () => {
+    const { available, unavailable } = splitParticipantsBySlot(
+      "s3",
+      participants,
+      availabilities,
+    );
+    expect(available).toEqual([]);
+    expect(unavailable.map((p) => p.name)).toEqual(["민수", "영희", "철수"]);
+  });
+
+  it("returns empty lists when there are no participants", () => {
+    expect(splitParticipantsBySlot("s1", [], [])).toEqual({
+      available: [],
+      unavailable: [],
+    });
   });
 });

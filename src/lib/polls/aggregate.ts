@@ -43,3 +43,34 @@ export function aggregateHeatmap(
 
   return { totalParticipants: participants.length, bySlot };
 }
+
+export interface SlotParticipants {
+  available: ParticipantRow[]; // 그 칸을 "가능"으로 칠한 참가자
+  unavailable: ParticipantRow[]; // 응답했지만 그 칸을 칠하지 않은 참가자
+}
+
+// 특정 칸의 가능자/불가능자를 가른다(FR-8). 불가능은 "응답한 참가자 중 그 칸 미선택"으로,
+// 아직 응답하지 않은 사람은 애초에 participants에 없으므로 어느 쪽에도 들어가지 않는다.
+export function splitParticipantsBySlot(
+  slotId: string,
+  participants: ParticipantRow[],
+  availabilities: AvailabilityRow[],
+): SlotParticipants {
+  const availableIds = new Set(
+    availabilities
+      .filter((a) => a.pollSlotId === slotId)
+      .map((a) => a.participantId),
+  );
+
+  const available: ParticipantRow[] = [];
+  const unavailable: ParticipantRow[] = [];
+  for (const p of participants) {
+    (availableIds.has(p.id) ? available : unavailable).push(p);
+  }
+
+  const byName = (a: ParticipantRow, b: ParticipantRow) =>
+    a.name.localeCompare(b.name);
+  available.sort(byName);
+  unavailable.sort(byName);
+  return { available, unavailable };
+}

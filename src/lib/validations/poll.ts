@@ -83,10 +83,5 @@ export const submitResponseSchema = z.object({
   editToken: z.uuid().optional(),
 });
 
-export const confirmPollSchema = z.object({
-  slotId: z.uuid(),
-});
-
 export type CreatePollInput = z.infer<typeof createPollSchema>;
 export type SubmitResponseInput = z.infer<typeof submitResponseSchema>;
-export type ConfirmPollInput = z.infer<typeof confirmPollSchema>;

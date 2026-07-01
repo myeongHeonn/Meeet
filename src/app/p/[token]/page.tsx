@@ -18,8 +18,6 @@ export default async function PollPage({
         poll={{
           title: data.poll.title,
           description: data.poll.description,
-          status: data.poll.status,
-          confirmedSlotId: data.poll.confirmedSlotId,
         }}
         slots={data.slots.map((s) => ({
           id: s.id,

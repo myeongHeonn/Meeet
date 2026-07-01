@@ -69,8 +69,8 @@ describe("TimeGrid (heatmap mode)", () => {
     expect(screen.getByTitle("2/2명: 민수, 영희")).toBeInTheDocument();
   });
 
-  it("invokes onCellClick when a cell is clicked", () => {
-    const onCellClick = jest.fn();
+  it("invokes onSlotSelect when a cell is clicked", () => {
+    const onSlotSelect = jest.fn();
     const { container } = render(
       <TimeGrid
         mode="heatmap"
@@ -78,11 +78,27 @@ describe("TimeGrid (heatmap mode)", () => {
         timeZone="UTC"
         totalParticipants={0}
         tallyBySlot={new Map()}
-        onCellClick={onCellClick}
+        onSlotSelect={onSlotSelect}
       />,
     );
     fireEvent.click(container.querySelector("[data-slot-id='s1']")!);
-    expect(onCellClick).toHaveBeenCalledWith("s1");
+    expect(onSlotSelect).toHaveBeenCalledWith("s1");
+  });
+
+  it("invokes onSlotHover with the slot id on pointer enter", () => {
+    const onSlotHover = jest.fn();
+    const { container } = render(
+      <TimeGrid
+        mode="heatmap"
+        slots={slots}
+        timeZone="UTC"
+        totalParticipants={0}
+        tallyBySlot={new Map()}
+        onSlotHover={onSlotHover}
+      />,
+    );
+    fireEvent.pointerEnter(container.querySelector("[data-slot-id='s1']")!);
+    expect(onSlotHover).toHaveBeenCalledWith("s1");
   });
 });
 

@@ -1,9 +1,4 @@
-import {
-  createPollSchema,
-  submitResponseSchema,
-  confirmPollSchema,
-  MAX_DATES,
-} from "./poll";
+import { createPollSchema, submitResponseSchema, MAX_DATES } from "./poll";
 
 // 항상 미래인 날짜를 만들어 "과거 날짜 거부" refine에 걸리지 않게 한다.
 const FUTURE_YEAR = new Date().getUTCFullYear() + 1;
@@ -164,19 +159,6 @@ describe("submitResponseSchema", () => {
         editToken: "not-a-uuid",
       }).success,
     ).toBe(false);
-  });
-});
-
-describe("confirmPollSchema", () => {
-  it("accepts a uuid slotId", () => {
-    expect(
-      confirmPollSchema.safeParse({ slotId: "11111111-1111-4111-8111-111111111111" })
-        .success,
-    ).toBe(true);
-  });
-
-  it("rejects a non-uuid slotId", () => {
-    expect(confirmPollSchema.safeParse({ slotId: "x" }).success).toBe(false);
   });
 });
 

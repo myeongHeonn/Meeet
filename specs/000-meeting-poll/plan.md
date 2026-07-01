@@ -3,6 +3,19 @@
 이 문서는 [spec.md](./spec.md)(Status: Approved)의 요구사항을 어떻게 구현할지 설계한다.
 FR 번호는 spec.md를 따른다.
 
+> **2026-07-01 개정 노트 (시간 확정 기능 제거).** 아래 설계 중 "확정(confirm)" 관련 부분은
+> 더 이상 유효하지 않다. spec.md 2026-07-01 개정에 따라 FR-9/FR-10과 데이터 모델의
+> `status`/`confirmedSlotId`(및 `poll_status` enum)를 제거했다. 구체적으로:
+> - 파일: `api/polls/[token]/confirm/route.ts` 삭제, `mutations.confirmPoll`·
+>   `rules.canConfirm`/`canRespond`·`validations.confirmPollSchema` 제거.
+> - 스키마: `meetingPolls`는 `id/title/description/publicToken/createdAt`만 남는다.
+>   순환 FK(§2)도 사라져 마이그레이션 `drizzle/0002_*`에서 컬럼·enum·FK를 드롭한다.
+> - 상호작용(§4, §8): 확정 조건부 갱신/409 경합 경로 제거. 응답 제출은 마감 상태가 없으므로
+>   상시 허용(409 없음). 대신 히트맵 칸 hover/click 시 `aggregate.splitParticipantsBySlot`로
+>   가능자·불가능자 명단을 상세 패널에 표시한다(FR-8 확장). design.md 화면2 참고.
+>
+> 이 노트 아래 본문은 최초 설계 기록으로 보존한다(수정하지 않음).
+
 ## 1. 영향 범위
 
 추가되는 파일:

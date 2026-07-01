@@ -1,4 +1,4 @@
-import { allSlotsBelongToPoll, canRespond, canConfirm } from "./rules";
+import { allSlotsBelongToPoll } from "./rules";
 
 describe("allSlotsBelongToPoll", () => {
   const pollSlots = ["s1", "s2", "s3"];
@@ -17,17 +17,5 @@ describe("allSlotsBelongToPoll", () => {
 
   it("accepts a Set as the poll slot collection", () => {
     expect(allSlotsBelongToPoll(["s2"], new Set(pollSlots))).toBe(true);
-  });
-});
-
-describe("canRespond / canConfirm", () => {
-  it("allow actions only when open", () => {
-    expect(canRespond("open")).toBe(true);
-    expect(canConfirm("open")).toBe(true);
-  });
-
-  it("block actions when confirmed", () => {
-    expect(canRespond("confirmed")).toBe(false);
-    expect(canConfirm("confirmed")).toBe(false);
   });
 });

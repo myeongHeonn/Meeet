@@ -1,28 +1,19 @@
 import {
   pgTable,
-  pgEnum,
   uuid,
   text,
   timestamp,
   unique,
   primaryKey,
-  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
-// 미팅 폴의 상태. open: 응답 받는 중, confirmed: 시간 확정됨(더 이상 응답/재확정 불가).
-export const pollStatus = pgEnum("poll_status", ["open", "confirmed"]);
-
-// 미팅 폴. 계정 개념이 없으므로 publicToken을 아는 것이 곧 조회/응답/확정 권한이다.
+// 미팅 폴. 계정 개념이 없으므로 publicToken을 아는 것이 곧 조회/응답 권한이다.
+// 마감/확정 상태는 두지 않는다 — 폴은 상시 열려 있고 결정은 폴 밖에서 내린다.
 export const meetingPolls = pgTable("meeting_polls", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),
   description: text("description"),
   publicToken: text("public_token").notNull().unique(),
-  status: pollStatus("status").notNull().default("open"),
-  // 확정된 칸. 순환 참조(meetingPolls -> pollSlots -> meetingPolls)라 지연 참조한다.
-  confirmedSlotId: uuid("confirmed_slot_id").references(
-    (): AnyPgColumn => pollSlots.id,
-  ),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

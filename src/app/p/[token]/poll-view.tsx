@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { TimeGrid } from "@/app/components/time-grid";
 import {
   aggregateHeatmap,
+  splitParticipantsBySlot,
   type AvailabilityRow,
   type ParticipantRow,
 } from "@/lib/polls/aggregate";
@@ -15,8 +16,6 @@ import { postJson } from "@/lib/api-client";
 interface PollSummary {
   title: string;
   description: string | null;
-  status: "open" | "confirmed";
-  confirmedSlotId: string | null;
 }
 
 interface Props {
@@ -51,9 +50,13 @@ export function PollView({
 
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [confirmSlot, setConfirmSlot] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  // 상세를 볼 칸: hover는 미리보기, click은 고정(pin). hover가 있으면 그걸 우선한다(FR-8).
+  const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
+  const [pinnedSlot, setPinnedSlot] = useState<string | null>(null);
+  const detailSlot = hoveredSlot ?? pinnedSlot;
 
   // 본인 편집 토큰. 최초 제출 시 발급받아 localStorage에 저장하고, 재제출 시 동봉한다(FR-7).
   const editTokenRef = useRef<string | null>(null);
@@ -96,7 +99,13 @@ export function PollView({
     return slot ? formatSlotLabel(slot.startsAt, timeZone) : "";
   };
 
-  const isOpen = poll.status === "open";
+  const detail = useMemo(
+    () =>
+      detailSlot
+        ? splitParticipantsBySlot(detailSlot, participants, availabilities)
+        : null,
+    [detailSlot, participants, availabilities],
+  );
 
   async function submitResponse() {
     setBusy(true);
@@ -124,32 +133,8 @@ export function PollView({
         }
         setMessage("응답이 저장되었어요.");
         router.refresh();
-      } else if (res.status === 409) {
-        setMessage("이미 확정된 폴이에요.");
-        router.refresh();
       } else {
         setMessage("응답 저장에 실패했어요.");
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function confirm() {
-    if (!confirmSlot) return;
-    setBusy(true);
-    setMessage(null);
-    try {
-      const res = await postJson(`/api/polls/${token}/confirm`, {
-        slotId: confirmSlot,
-      });
-      if (res.ok) {
-        router.refresh();
-      } else if (res.status === 409) {
-        setMessage("방금 다른 사람이 확정했어요.");
-        router.refresh();
-      } else {
-        setMessage("확정에 실패했어요.");
       }
     } finally {
       setBusy(false);
@@ -161,59 +146,45 @@ export function PollView({
       <header className="space-y-1">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold">{poll.title}</h1>
-          <span
-            className={`rounded px-2 py-0.5 text-xs ${
-              isOpen ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
-            }`}
-          >
-            {isOpen ? "모집 중" : "확정됨"}
-          </span>
           <span className="text-xs text-gray-500">
             응답 {heatmap.totalParticipants}명
           </span>
         </div>
         {poll.description && <p className="text-sm text-gray-600">{poll.description}</p>}
-        {!isOpen && poll.confirmedSlotId && (
-          <p className="text-sm font-medium text-blue-700">
-            ✓ 확정: {slotLabel(poll.confirmedSlotId)}
-          </p>
-        )}
       </header>
 
       {message && <p className="text-sm text-gray-700">{message}</p>}
 
       <div className="grid gap-8 md:grid-cols-2">
-        {isOpen && (
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold">내 가능 시간 (드래그로 칠하기)</h2>
-            <input
-              aria-label="이름"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={80}
-              placeholder="이름을 입력하면 칠할 수 있어요"
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-            />
-            <TimeGrid
-              mode="edit"
-              slots={slots}
-              timeZone={timeZone}
-              value={selected}
-              disabled={name.trim().length === 0}
-              onToggle={(slotId, next) =>
-                setSelected((prev) => withSetItem(prev, slotId, next))
-              }
-            />
-            <button
-              type="button"
-              disabled={busy || name.trim().length === 0}
-              onClick={submitResponse}
-              className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
-            >
-              응답 제출
-            </button>
-          </section>
-        )}
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold">내 가능 시간 (드래그로 칠하기)</h2>
+          <input
+            aria-label="이름"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={80}
+            placeholder="이름을 입력하면 칠할 수 있어요"
+            className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+          />
+          <TimeGrid
+            mode="edit"
+            slots={slots}
+            timeZone={timeZone}
+            value={selected}
+            disabled={name.trim().length === 0}
+            onToggle={(slotId, next) =>
+              setSelected((prev) => withSetItem(prev, slotId, next))
+            }
+          />
+          <button
+            type="button"
+            disabled={busy || name.trim().length === 0}
+            onClick={submitResponse}
+            className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
+          >
+            응답 제출
+          </button>
+        </section>
 
         <section className="space-y-3">
           <h2 className="text-sm font-semibold">그룹 현황 (히트맵)</h2>
@@ -223,27 +194,86 @@ export function PollView({
             timeZone={timeZone}
             tallyBySlot={heatmap.bySlot}
             totalParticipants={heatmap.totalParticipants}
-            confirmedSlotId={poll.confirmedSlotId}
-            onCellClick={isOpen ? (slotId) => setConfirmSlot(slotId) : undefined}
-            selectedCellId={confirmSlot}
+            onSlotHover={setHoveredSlot}
+            onSlotSelect={(slotId) =>
+              setPinnedSlot((prev) => (prev === slotId ? null : slotId))
+            }
+            activeSlotId={detailSlot}
           />
-          {isOpen && (
-            <div className="space-y-2">
-              <p className="text-xs text-gray-500">
-                히트맵에서 칸을 고른 뒤 확정하세요 (링크 소지자 누구나).
-              </p>
-              <button
-                type="button"
-                disabled={busy || !confirmSlot}
-                onClick={confirm}
-                className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
-              >
-                {confirmSlot ? `${slotLabel(confirmSlot)}(으)로 확정` : "이 시간으로 확정"}
-              </button>
-            </div>
-          )}
+          <p className="text-xs text-gray-500">
+            칸을 가리키거나 클릭하면 누가 가능/불가능한지 볼 수 있어요.
+          </p>
+          <SlotDetail
+            label={detailSlot ? slotLabel(detailSlot) : null}
+            available={detail?.available ?? []}
+            unavailable={detail?.unavailable ?? []}
+          />
         </section>
       </div>
+    </div>
+  );
+}
+
+function SlotDetail({
+  label,
+  available,
+  unavailable,
+}: {
+  label: string | null;
+  available: ParticipantRow[];
+  unavailable: ParticipantRow[];
+}) {
+  if (!label) {
+    return (
+      <p className="text-xs text-gray-400">
+        칸을 가리키면 여기에 명단이 표시됩니다.
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-2 rounded border border-gray-200 p-3 text-sm">
+      <p className="font-medium">{label}</p>
+      <NameList
+        title={`가능 ${available.length}명`}
+        names={available.map((p) => p.name)}
+        tone="available"
+      />
+      <NameList
+        title={`불가능 ${unavailable.length}명`}
+        names={unavailable.map((p) => p.name)}
+        tone="unavailable"
+      />
+    </div>
+  );
+}
+
+function NameList({
+  title,
+  names,
+  tone,
+}: {
+  title: string;
+  names: string[];
+  tone: "available" | "unavailable";
+}) {
+  const chip =
+    tone === "available"
+      ? "bg-green-100 text-green-800"
+      : "bg-gray-100 text-gray-600";
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-gray-500">{title}</p>
+      {names.length > 0 ? (
+        <div className="flex flex-wrap gap-1">
+          {names.map((n, i) => (
+            <span key={`${n}-${i}`} className={`rounded px-1.5 py-0.5 text-xs ${chip}`}>
+              {n}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-gray-400">없음</p>
+      )}
     </div>
   );
 }

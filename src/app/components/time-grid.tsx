@@ -7,7 +7,6 @@ import type { SlotTally } from "@/lib/polls/aggregate";
 interface CommonProps {
   slots: LayoutSlot[];
   timeZone: string;
-  confirmedSlotId?: string | null;
 }
 
 interface EditProps extends CommonProps {
@@ -21,8 +20,10 @@ interface HeatmapProps extends CommonProps {
   mode: "heatmap";
   tallyBySlot: Map<string, SlotTally>;
   totalParticipants: number;
-  onCellClick?: (slotId: string) => void;
-  selectedCellId?: string | null;
+  // 칸을 가리키면(hover) 상세 미리보기, 클릭하면 고정(pin)해 상세를 연다(FR-8).
+  onSlotHover?: (slotId: string | null) => void;
+  onSlotSelect?: (slotId: string) => void;
+  activeSlotId?: string | null; // 현재 상세를 보고 있는 칸(강조 표시).
 }
 
 export type TimeGridProps = EditProps | HeatmapProps;
@@ -51,9 +52,12 @@ export function TimeGrid(props: TimeGridProps) {
     drag.current.active = false;
   };
 
-  function renderCell(slotId: string) {
-    const isConfirmed = props.confirmedSlotId === slotId;
+  const onContainerLeave = () => {
+    endDrag();
+    if (props.mode === "heatmap") props.onSlotHover?.(null);
+  };
 
+  function renderCell(slotId: string) {
     if (props.mode === "edit") {
       const selected = props.value.has(slotId);
       return (
@@ -80,7 +84,7 @@ export function TimeGrid(props: TimeGridProps) {
     const tally = props.tallyBySlot.get(slotId);
     const count = tally?.count ?? 0;
     const ratio = props.totalParticipants > 0 ? count / props.totalParticipants : 0;
-    const selected = props.selectedCellId === slotId;
+    const active = props.activeSlotId === slotId;
     return (
       <div
         data-slot-id={slotId}
@@ -89,16 +93,15 @@ export function TimeGrid(props: TimeGridProps) {
             ? `${count}/${props.totalParticipants}명: ${tally!.names.join(", ")}`
             : `0/${props.totalParticipants}명`
         }
-        className={`flex h-7 w-20 items-center justify-center border border-white text-[10px] text-gray-800 ${
-          props.onCellClick ? "cursor-pointer" : ""
-        } ${isConfirmed ? "ring-2 ring-blue-500 ring-inset" : ""} ${
-          selected ? "outline outline-2 outline-blue-400" : ""
+        className={`flex h-7 w-20 cursor-pointer items-center justify-center border border-white text-[10px] text-gray-800 ${
+          active ? "outline outline-2 outline-blue-500" : ""
         }`}
         style={{
           backgroundColor:
             count > 0 ? `rgba(34,197,94,${0.15 + 0.85 * ratio})` : "#f3f4f6",
         }}
-        onClick={() => props.onCellClick?.(slotId)}
+        onPointerEnter={() => props.onSlotHover?.(slotId)}
+        onClick={() => props.onSlotSelect?.(slotId)}
       >
         {count > 0 ? count : ""}
       </div>
@@ -109,7 +112,7 @@ export function TimeGrid(props: TimeGridProps) {
     <div
       className="overflow-x-auto select-none"
       onPointerUp={endDrag}
-      onPointerLeave={endDrag}
+      onPointerLeave={onContainerLeave}
     >
       <table className="border-separate border-spacing-0 text-xs">
         <thead>
