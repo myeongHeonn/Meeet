@@ -28,16 +28,12 @@ interface HeatmapProps extends CommonProps {
 
 export type TimeGridProps = EditProps | HeatmapProps;
 
-// 드래그 페인트 상태.
-// pending: 터치 시작 후 방향이 확정되기 전(가로이면 취소, 세로이면 커밋).
+// 마우스 드래그 페인트 상태. 터치는 드래그 선택을 쓰지 않고 탭 토글 + 네이티브 스크롤에 맡긴다.
 interface DragState {
   active: boolean;
   target: boolean;
   dateKey: string | null;
-  pending: boolean;
-  startX: number;
-  startY: number;
-  pendingSlotId: string | null;
+  lastPointerType: string;
 }
 
 function formatDateLabel(dateKey: string): string {
@@ -54,10 +50,7 @@ export function TimeGrid(props: TimeGridProps) {
     active: false,
     target: false,
     dateKey: null,
-    pending: false,
-    startX: 0,
-    startY: 0,
-    pendingSlotId: null,
+    lastPointerType: "mouse",
   });
 
   if (layout.dateKeys.length === 0) {
@@ -66,7 +59,6 @@ export function TimeGrid(props: TimeGridProps) {
 
   const endDrag = () => {
     drag.current.active = false;
-    drag.current.pending = false;
   };
 
   const onContainerLeave = () => {
@@ -88,38 +80,26 @@ export function TimeGrid(props: TimeGridProps) {
             selected ? "bg-gray-900" : "bg-gray-100"
           } ${props.disabled ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
           onPointerDown={(e) => {
+            drag.current.lastPointerType = e.pointerType;
+            // 터치: 드래그 선택을 쓰지 않는다. 세로/가로 네이티브 스크롤에 맡기고 탭(onClick)으로만 토글.
+            if (e.pointerType === "touch") return;
+            // 마우스: 즉시 토글하고 드래그 시작.
             const next = !selected;
-            if (e.pointerType === "touch") {
-              // 터치: 방향 확정 전까지 선택을 보류한다.
-              drag.current = {
-                active: false,
-                target: next,
-                dateKey,
-                pending: true,
-                startX: e.clientX,
-                startY: e.clientY,
-                pendingSlotId: slotId,
-              };
-              // capture 해제 → pointermove가 이동한 요소로 버블링된다.
-              (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-            } else {
-              // 마우스: 즉시 토글하고 드래그 시작.
-              drag.current = {
-                active: true,
-                target: next,
-                dateKey,
-                pending: false,
-                startX: 0,
-                startY: 0,
-                pendingSlotId: null,
-              };
-              props.onToggle(slotId, next);
-            }
+            drag.current.active = true;
+            drag.current.target = next;
+            drag.current.dateKey = dateKey;
+            props.onToggle(slotId, next);
           }}
           onPointerEnter={() => {
             // 마우스 드래그: 같은 열(날짜)일 때만 토글한다(가로 드래그 차단).
             if (drag.current.active && drag.current.dateKey === dateKey) {
               props.onToggle(slotId, drag.current.target);
+            }
+          }}
+          onClick={() => {
+            // 터치 탭만 여기서 토글한다(마우스는 pointerdown에서 이미 처리).
+            if (drag.current.lastPointerType === "touch") {
+              props.onToggle(slotId, !selected);
             }
           }}
         />
@@ -156,48 +136,9 @@ export function TimeGrid(props: TimeGridProps) {
   return (
     <div
       className="overflow-auto select-none max-h-[55vh] w-fit max-w-full"
-      style={props.mode === "edit" ? { touchAction: "pan-x" } : undefined}
-      onPointerUp={() => {
-        // 터치 탭: 방향 판정 전 손가락을 뗐으면 단순 탭으로 처리해 선택한다.
-        if (drag.current.pending && props.mode === "edit" && drag.current.pendingSlotId) {
-          props.onToggle(drag.current.pendingSlotId, drag.current.target);
-        }
-        endDrag();
-      }}
+      onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onPointerLeave={onContainerLeave}
-      onPointerMove={(e) => {
-        if (props.mode !== "edit" || e.pointerType !== "touch") return;
-
-        if (drag.current.pending) {
-          const dx = Math.abs(e.clientX - drag.current.startX);
-          const dy = Math.abs(e.clientY - drag.current.startY);
-          // 충분히 움직이지 않으면 아직 방향 판정 보류.
-          if (dx < 5 && dy < 5) return;
-
-          if (dx >= dy) {
-            // 가로 방향: 선택 취소, 브라우저 스크롤에 맡긴다.
-            drag.current.pending = false;
-            return;
-          }
-          // 세로 방향: 첫 셀 선택을 커밋하고 드래그 모드로 전환.
-          drag.current.pending = false;
-          drag.current.active = true;
-          if (drag.current.pendingSlotId) {
-            props.onToggle(drag.current.pendingSlotId, drag.current.target);
-          }
-        }
-
-        if (!drag.current.active) return;
-
-        // 세로 드래그: 같은 날짜 열의 셀만 토글한다.
-        const cell = (e.target as HTMLElement).closest("[data-slot-id]") as HTMLElement | null;
-        if (!cell) return;
-        const { slotId, dateKey } = cell.dataset;
-        if (slotId && dateKey === drag.current.dateKey) {
-          props.onToggle(slotId, drag.current.target);
-        }
-      }}
     >
       <table className="border-separate border-spacing-0 text-xs">
         <thead>
