@@ -12,8 +12,13 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   return `${pad2(h)}:${m}`;
 });
 
-// 종료 시각은 하루 끝(24:00)까지 고를 수 있다.
 const END_TIME_OPTIONS = [...TIME_OPTIONS, "24:00"];
+
+const inputClass =
+  "w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-900/10 placeholder:text-gray-400";
+
+const selectClass =
+  "rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-900/10";
 
 export function CreatePollForm() {
   const [title, setTitle] = useState("");
@@ -66,25 +71,33 @@ export function CreatePollForm() {
     const url =
       typeof window !== "undefined" ? `${window.location.origin}/p/${token}` : `/p/${token}`;
     return (
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">✓ 폴이 만들어졌어요</h2>
-        <p className="text-sm text-gray-600">이 링크를 참가자에게 공유하세요.</p>
+      <div className="space-y-5">
+        <div className="flex items-center gap-2">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-900 text-xs text-white">
+            ✓
+          </span>
+          <h2 className="text-lg font-semibold">폴이 만들어졌어요</h2>
+        </div>
+        <p className="text-sm text-gray-500">이 링크를 참가자에게 공유하세요.</p>
         <div className="flex gap-2">
           <input
             readOnly
             value={url}
             aria-label="공유 링크"
-            className="flex-1 rounded border border-gray-300 px-3 py-2 text-sm"
+            className={`${inputClass} font-mono text-xs`}
           />
           <button
             type="button"
             onClick={() => navigator.clipboard?.writeText(url)}
-            className="rounded bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-700"
+            className="rounded-full bg-gray-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-gray-700 whitespace-nowrap"
           >
             복사
           </button>
         </div>
-        <a href={`/p/${token}`} className="inline-block text-sm text-blue-600 hover:underline">
+        <a
+          href={`/p/${token}`}
+          className="inline-flex items-center gap-1 text-sm font-medium text-gray-900 hover:underline"
+        >
           폴로 이동 →
         </a>
       </div>
@@ -92,47 +105,53 @@ export function CreatePollForm() {
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <label className="mb-1 block text-sm font-medium" htmlFor="title">
-          제목 *
+    <div className="space-y-6">
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium" htmlFor="title">
+          제목 <span className="text-gray-400">*</span>
         </label>
         <input
           id="title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           maxLength={200}
-          className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+          className={inputClass}
           placeholder="예: 팀 회식 일정"
         />
       </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium" htmlFor="description">
-          설명 (선택)
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium" htmlFor="description">
+          설명{" "}
+          <span className="font-normal text-gray-400">(선택)</span>
         </label>
         <input
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           maxLength={2000}
-          className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+          className={inputClass}
+          placeholder="참가자에게 전달할 내용을 입력하세요"
         />
       </div>
 
-      <div>
-        <span className="mb-1 block text-sm font-medium">후보 날짜 *</span>
+      <div className="space-y-1.5">
+        <span className="block text-sm font-medium">
+          후보 날짜 <span className="text-gray-400">*</span>
+        </span>
         <DatePickerCalendar selected={dates} onToggle={toggleDate} />
       </div>
 
-      <div>
-        <span className="mb-1 block text-sm font-medium">하루 시간 범위 *</span>
+      <div className="space-y-1.5">
+        <span className="block text-sm font-medium">
+          하루 시간 범위 <span className="text-gray-400">*</span>
+        </span>
         <div className="flex items-center gap-2 text-sm">
           <select
             aria-label="시작 시각"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            className="rounded border border-gray-300 px-2 py-1"
+            className={selectClass}
           >
             {TIME_OPTIONS.map((t) => (
               <option key={t} value={t}>
@@ -140,12 +159,12 @@ export function CreatePollForm() {
               </option>
             ))}
           </select>
-          <span>부터</span>
+          <span className="text-gray-400">–</span>
           <select
             aria-label="종료 시각"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
-            className="rounded border border-gray-300 px-2 py-1"
+            className={selectClass}
           >
             {END_TIME_OPTIONS.map((t) => (
               <option key={t} value={t}>
@@ -153,21 +172,21 @@ export function CreatePollForm() {
               </option>
             ))}
           </select>
-          <span className="text-gray-500">(30분 단위)</span>
+          <span className="text-gray-400 text-xs">30분 단위</span>
         </div>
       </div>
 
-      <p className="text-sm text-gray-600">
-        선택 요약: {dates.size}일 × {startTime}–{endTime} = 칸 {totalCells}개
+      <p className="text-xs text-gray-400">
+        {dates.size}일 × {startTime}–{endTime} = 칸 {totalCells}개
       </p>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
       <button
         type="button"
         disabled={!valid || submitting}
         onClick={handleSubmit}
-        className="rounded bg-green-600 px-5 py-2 text-sm font-medium text-white hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-full bg-gray-900 px-7 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {submitting ? "만드는 중…" : "폴 만들기"}
       </button>

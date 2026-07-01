@@ -85,7 +85,7 @@ export function TimeGrid(props: TimeGridProps) {
           data-slot-id={slotId}
           data-date-key={dateKey}
           className={`h-7 w-20 border border-white ${
-            selected ? "bg-green-500" : "bg-gray-200"
+            selected ? "bg-violet-500" : "bg-gray-100"
           } ${props.disabled ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
           onPointerDown={(e) => {
             const next = !selected;
@@ -138,12 +138,12 @@ export function TimeGrid(props: TimeGridProps) {
             ? `${count}/${props.totalParticipants}명: ${tally!.names.join(", ")}`
             : `0/${props.totalParticipants}명`
         }
-        className={`flex h-7 w-20 cursor-pointer items-center justify-center border border-white text-[10px] text-gray-800 ${
+        className={`flex h-7 w-20 cursor-pointer items-center justify-center border border-white text-[10px] ${ratio > 0.5 ? "text-white" : "text-gray-700"} ${
           active ? "outline outline-2 outline-blue-500" : ""
         }`}
         style={{
           backgroundColor:
-            count > 0 ? `rgba(34,197,94,${0.15 + 0.85 * ratio})` : "#f3f4f6",
+            count > 0 ? `rgba(139,92,246,${0.1 + 0.85 * ratio})` : "#f3f4f6",
         }}
         onPointerEnter={() => props.onSlotHover?.(slotId)}
         onClick={() => props.onSlotSelect?.(slotId)}

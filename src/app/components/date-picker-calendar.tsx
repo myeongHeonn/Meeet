@@ -4,7 +4,7 @@ import { useState } from "react";
 import { pad2 } from "@/lib/datetime";
 
 interface Props {
-  selected: Set<string>; // "YYYY-MM-DD" (브라우저 로컬 날짜)
+  selected: Set<string>;
   onToggle: (dateKey: string) => void;
 }
 
@@ -41,23 +41,23 @@ export function DatePickerCalendar({ selected, onToggle }: Props) {
     });
 
   return (
-    <div className="inline-block rounded border border-gray-200 p-3">
-      <div className="mb-2 flex items-center justify-between">
+    <div className="inline-block rounded-xl border border-gray-200 p-4">
+      <div className="mb-3 flex items-center justify-between gap-4">
         <button
           type="button"
           onClick={() => shiftMonth(-1)}
-          className="px-2 py-1 text-gray-600 hover:bg-gray-100"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100"
           aria-label="이전 달"
         >
           ‹
         </button>
-        <span className="text-sm font-medium">
+        <span className="text-sm font-semibold">
           {view.year}년 {view.month + 1}월
         </span>
         <button
           type="button"
           onClick={() => shiftMonth(1)}
-          className="px-2 py-1 text-gray-600 hover:bg-gray-100"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100"
           aria-label="다음 달"
         >
           ›
@@ -66,7 +66,7 @@ export function DatePickerCalendar({ selected, onToggle }: Props) {
 
       <div className="grid grid-cols-7 gap-1 text-center text-xs">
         {WEEKDAYS.map((w) => (
-          <div key={w} className="py-1 font-medium text-gray-500">
+          <div key={w} className="py-1 text-xs font-medium text-gray-400">
             {w}
           </div>
         ))}
@@ -82,12 +82,12 @@ export function DatePickerCalendar({ selected, onToggle }: Props) {
               disabled={isPast}
               aria-pressed={isSelected}
               onClick={() => onToggle(key)}
-              className={`h-8 w-8 rounded text-sm ${
+              className={`h-8 w-8 rounded-full text-sm font-medium transition ${
                 isPast
                   ? "cursor-not-allowed text-gray-300"
                   : isSelected
-                    ? "bg-green-500 text-white"
-                    : "hover:bg-green-100"
+                    ? "bg-gray-900 text-white"
+                    : "text-gray-700 hover:bg-gray-100"
               }`}
             >
               {day}

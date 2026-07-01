@@ -145,15 +145,17 @@ export function PollView({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <header className="space-y-1">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold">{poll.title}</h1>
-          <span className="text-xs text-gray-500">
-            응답 {heatmap.totalParticipants}명
+          <h1 className="text-2xl font-bold tracking-tight">{poll.title}</h1>
+          <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
+            {heatmap.totalParticipants}명 응답
           </span>
         </div>
-        {poll.description && <p className="text-sm text-gray-600">{poll.description}</p>}
+        {poll.description && (
+          <p className="text-sm text-gray-500">{poll.description}</p>
+        )}
       </header>
 
       {/* 모바일 전용 탭 네비게이션 */}
@@ -163,8 +165,8 @@ export function PollView({
           onClick={() => setStep("edit")}
           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
             step === "edit"
-              ? "border-b-2 border-green-600 text-green-600"
-              : "text-gray-500"
+              ? "border-b-2 border-gray-900 text-gray-900"
+              : "text-gray-400 hover:text-gray-600"
           }`}
         >
           내 가능 시간
@@ -174,26 +176,28 @@ export function PollView({
           onClick={() => setStep("results")}
           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
             step === "results"
-              ? "border-b-2 border-green-600 text-green-600"
-              : "text-gray-500"
+              ? "border-b-2 border-gray-900 text-gray-900"
+              : "text-gray-400 hover:text-gray-600"
           }`}
         >
           그룹 현황
         </button>
       </div>
 
-      {message && <p className="text-sm text-gray-700">{message}</p>}
+      {message && (
+        <p className="text-sm font-medium text-gray-700">{message}</p>
+      )}
 
       <div className="grid gap-8 md:grid-cols-2">
         <section className={`min-w-0 space-y-3 ${step === "results" ? "hidden md:block" : ""}`}>
-          <h2 className="hidden text-sm font-semibold md:block">내 가능 시간</h2>
+          <h2 className="hidden text-sm font-semibold text-gray-700 md:block">내 가능 시간</h2>
           <input
             aria-label="이름"
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={80}
             placeholder="이름을 입력하면 칠할 수 있어요"
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-900/10 placeholder:text-gray-400"
           />
           <TimeGrid
             mode="edit"
@@ -210,14 +214,14 @@ export function PollView({
               type="button"
               disabled={busy || name.trim().length === 0}
               onClick={submitResponse}
-              className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
+              className="rounded-full bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              응답 제출
+              {busy ? "저장 중…" : "응답 제출"}
             </button>
             <button
               type="button"
               onClick={() => setStep("results")}
-              className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 md:hidden"
+              className="text-sm text-gray-400 hover:text-gray-600 md:hidden"
             >
               그룹 현황 보기 →
             </button>
@@ -226,11 +230,11 @@ export function PollView({
 
         <section className={`min-w-0 space-y-3 ${step === "edit" ? "hidden md:block" : ""}`}>
           <div className="flex items-center justify-between md:block">
-            <h2 className="text-sm font-semibold">그룹 현황</h2>
+            <h2 className="text-sm font-semibold text-gray-700">그룹 현황</h2>
             <button
               type="button"
               onClick={() => setStep("edit")}
-              className="text-sm text-gray-500 hover:text-gray-700 md:hidden"
+              className="text-sm text-gray-400 hover:text-gray-600 md:hidden"
             >
               ← 내 가능 시간
             </button>
@@ -247,7 +251,7 @@ export function PollView({
             }
             activeSlotId={detailSlot}
           />
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-400">
             칸을 가리키거나 클릭하면 누가 가능/불가능한지 볼 수 있어요.
           </p>
           <SlotDetail
@@ -272,14 +276,12 @@ function SlotDetail({
 }) {
   if (!label) {
     return (
-      <p className="text-xs text-gray-400">
-        칸을 가리키면 여기에 명단이 표시됩니다.
-      </p>
+      <p className="text-xs text-gray-400">칸을 가리키면 여기에 명단이 표시됩니다.</p>
     );
   }
   return (
-    <div className="space-y-2 rounded border border-gray-200 p-3 text-sm">
-      <p className="font-medium">{label}</p>
+    <div className="space-y-2 rounded-xl border border-gray-200 p-3.5 text-sm">
+      <p className="font-semibold text-gray-800">{label}</p>
       <NameList
         title={`가능 ${available.length}명`}
         names={available.map((p) => p.name)}
@@ -305,21 +307,24 @@ function NameList({
 }) {
   const chip =
     tone === "available"
-      ? "bg-green-100 text-green-800"
-      : "bg-gray-100 text-gray-600";
+      ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+      : "bg-gray-100 text-gray-500";
   return (
     <div className="space-y-1">
-      <p className="text-xs font-medium text-gray-500">{title}</p>
+      <p className="text-xs font-medium text-gray-400">{title}</p>
       {names.length > 0 ? (
         <div className="flex flex-wrap gap-1">
           {names.map((n, i) => (
-            <span key={`${n}-${i}`} className={`rounded px-1.5 py-0.5 text-xs ${chip}`}>
+            <span
+              key={`${n}-${i}`}
+              className={`rounded-full px-2 py-0.5 text-xs font-medium ${chip}`}
+            >
               {n}
             </span>
           ))}
         </div>
       ) : (
-        <p className="text-xs text-gray-400">없음</p>
+        <p className="text-xs text-gray-300">없음</p>
       )}
     </div>
   );
