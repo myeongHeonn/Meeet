@@ -32,7 +32,7 @@ export function ShareBanner({ token }: { token: string }) {
   }
 
   return (
-    <div className="mb-6 space-y-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4">
+    <div className="space-y-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4">
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-amber-900">
           폴이 만들어졌어요 — 이 링크를 참가자에게 공유하세요.

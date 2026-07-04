@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TimeGrid } from "@/app/components/time-grid";
+import { ShareBanner } from "./share-banner";
 import { buildGridLayout } from "@/lib/polls/layout";
 import {
   aggregateHeatmap,
@@ -181,7 +182,19 @@ export function PollView({
   }
 
   return (
-    <div className="space-y-5">
+    // 배너·제목·패널이 같은 폭을 공유하도록 페이지 콘텐츠 전체를
+    // "패널 2개 + 간격(2rem)" 폭으로 제한한다(데스크톱). 날짜가 많으면
+    // main의 max-w-4xl에 먼저 걸려 지금과 동일하게 찬다.
+    <div
+      style={
+        {
+          "--panel-max": panelMaxWidth,
+          "--page-max": `calc(2 * ${panelMaxWidth} + 2rem)`,
+        } as React.CSSProperties
+      }
+      className="mx-auto w-full space-y-5 md:max-w-[var(--page-max)]"
+    >
+      <ShareBanner token={token} />
       <header className="space-y-1">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight">{poll.title}</h1>
@@ -228,7 +241,6 @@ export function PollView({
           날짜가 적어도 빈 공간이 좌우 여백으로 균형 있게 빠지도록 한다. */}
       <div className="flex flex-col gap-8 md:flex-row md:justify-center">
         <section
-          style={{ "--panel-max": panelMaxWidth } as React.CSSProperties}
           className={`min-w-0 space-y-3 md:flex-1 md:max-w-[var(--panel-max)] ${step === "results" ? "hidden md:block" : ""}`}
         >
           <h2 className="hidden text-sm font-semibold text-gray-700 md:block">내 가능 시간</h2>
@@ -278,7 +290,6 @@ export function PollView({
         </section>
 
         <section
-          style={{ "--panel-max": panelMaxWidth } as React.CSSProperties}
           className={`min-w-0 space-y-3 md:flex-1 md:max-w-[var(--panel-max)] ${step === "edit" ? "hidden md:block" : ""}`}
         >
           <div className="flex items-center justify-between md:block">
