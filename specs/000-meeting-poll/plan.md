@@ -110,10 +110,12 @@ Server Action 대신 `app/api/.../route.ts`로 구현하고, 클라이언트 컴
 - `GET /` ([page.tsx]) — 서버 컴포넌트 셸 + `"use client"` 생성 폼.
   날짜는 `date-picker-calendar.tsx`(클릭·드래그 선택), 시간 범위는 30분 단위 드롭다운.
   제출 시 `{ title, description?, dates[], startTime, endTime, timeZone }`를 전송(FR-2,12).
-  성공 응답의 `token`을 받아 공유 화면으로 전환.
-- 생성 후 공유 화면 — **생성 페이지 내 클라이언트 상태 전환**으로 처리한다(별도 라우트 미사용).
-  생성 직후 `token`을 이미 손에 쥐고 있으므로 추가 라운드트립이 불필요하고, 새 라우트보다 단순하다.
-  공유 화면은 `/p/{token}` 절대 URL + 복사 버튼 + "폴로 이동" 링크를 보여준다.
+  성공 응답의 `token`을 받아 sessionStorage에 생성자 플래그(`creator-flag.ts`)를 남기고
+  `/p/{token}`으로 즉시 `router.push`(별도 완료 화면 없음 — URL이 히스토리에 남아 링크 유실도 줄인다).
+- 생성 후 공유 — 폴 페이지 상단의 `share-banner.tsx`("use client")가 담당한다.
+  생성자 플래그가 있는 탭에서만 렌더되고(링크로 들어온 참가자에게는 안 보임),
+  `/p/{token}` 절대 URL + 복사 버튼(`copy-link-button.tsx`, "복사됨 ✓" 피드백)을 보여주며
+  ✕로 닫으면 플래그를 지워 다시 뜨지 않는다.
 - `GET /p/[token]` ([page.tsx]) — 서버 컴포넌트에서 폴+슬롯+참여현황을 조회(`queries.ts`),
   없으면 `notFound()`(404, spec §8). 데이터를 `poll-view.tsx`("use client")에 전달.
   클라이언트에서 슬롯들을 (날짜 행 × 시간 열) 격자로 배치하고, 왼쪽 `time-grid`(edit) +

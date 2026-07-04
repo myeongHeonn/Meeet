@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { DatePickerCalendar } from "./date-picker-calendar";
-import { CopyLinkButton } from "./copy-link-button";
 import { hhmmToMinutes, pad2 } from "@/lib/datetime";
 import { toggleSetItem } from "@/lib/collections";
 import { postJson } from "@/lib/api-client";
@@ -23,13 +23,13 @@ const selectClass =
   "rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-900/10";
 
 export function CreatePollForm() {
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [dates, setDates] = useState<Set<string>>(new Set());
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("17:00");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
 
   const valid =
     title.trim().length > 0 &&
@@ -51,6 +51,7 @@ export function CreatePollForm() {
       });
       if (!res.ok || !res.data) {
         setError("폴 생성에 실패했습니다. 입력을 확인해주세요.");
+        setSubmitting(false);
         return;
       }
       try {
@@ -59,43 +60,14 @@ export function CreatePollForm() {
       } catch {
         // 저장소가 막힌 환경에서는 배너 없이 진행한다.
       }
-      setToken(res.data.token);
+      // 별도 완료 화면 없이 폴 페이지로 바로 이동한다. 공유 링크는 폴 페이지의
+      // 생성자 배너가 보여주고, URL이 히스토리에 남아 링크 유실도 줄어든다.
+      // 이동이 끝날 때까지 submitting을 유지해 버튼이 다시 활성화되지 않게 한다.
+      router.push(`/p/${res.data.token}`);
     } catch {
       setError("네트워크 오류가 발생했습니다.");
-    } finally {
       setSubmitting(false);
     }
-  }
-
-  if (token) {
-    const url =
-      typeof window !== "undefined" ? `${window.location.origin}/p/${token}` : `/p/${token}`;
-    return (
-      <div className="space-y-5">
-        <div className="flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-900 text-xs text-white">
-            ✓
-          </span>
-          <h2 className="text-lg font-semibold">폴이 만들어졌어요</h2>
-        </div>
-        <p className="text-sm text-gray-500">이 링크를 참가자에게 공유하세요.</p>
-        <div className="flex gap-2">
-          <input
-            readOnly
-            value={url}
-            aria-label="공유 링크"
-            className={`${inputClass} font-mono text-xs`}
-          />
-          <CopyLinkButton url={url} />
-        </div>
-        <a
-          href={`/p/${token}`}
-          className="inline-flex items-center gap-1 text-sm font-medium text-gray-900 hover:underline"
-        >
-          폴로 이동 →
-        </a>
-      </div>
-    );
   }
 
   return (
