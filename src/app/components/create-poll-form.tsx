@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { DatePickerCalendar } from "./date-picker-calendar";
+import { CopyLinkButton } from "./copy-link-button";
 import { hhmmToMinutes, pad2 } from "@/lib/datetime";
 import { toggleSetItem } from "@/lib/collections";
 import { postJson } from "@/lib/api-client";
+import { creatorFlagKey } from "@/lib/creator-flag";
 
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const h = Math.floor(i / 2);
@@ -51,6 +53,12 @@ export function CreatePollForm() {
         setError("폴 생성에 실패했습니다. 입력을 확인해주세요.");
         return;
       }
+      try {
+        // 이 탭에서 만든 폴임을 표시해두면 폴 페이지가 공유 링크 배너를 띄운다.
+        window.sessionStorage.setItem(creatorFlagKey(res.data.token), "1");
+      } catch {
+        // 저장소가 막힌 환경에서는 배너 없이 진행한다.
+      }
       setToken(res.data.token);
     } catch {
       setError("네트워크 오류가 발생했습니다.");
@@ -78,13 +86,7 @@ export function CreatePollForm() {
             aria-label="공유 링크"
             className={`${inputClass} font-mono text-xs`}
           />
-          <button
-            type="button"
-            onClick={() => navigator.clipboard?.writeText(url)}
-            className="rounded-full bg-gray-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-gray-700 whitespace-nowrap"
-          >
-            복사
-          </button>
+          <CopyLinkButton url={url} />
         </div>
         <a
           href={`/p/${token}`}

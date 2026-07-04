@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getPollByToken } from "@/lib/polls/queries";
 import { PollView } from "./poll-view";
+import { ShareBanner } from "./share-banner";
 
 export default async function PollPage({
   params,
@@ -13,6 +14,7 @@ export default async function PollPage({
 
   return (
     <main className="mx-auto max-w-4xl px-4 pt-4 pb-8 md:py-12">
+      <ShareBanner token={token} />
       <PollView
         token={token}
         poll={{
