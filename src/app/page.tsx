@@ -2,7 +2,7 @@ import { CreatePollForm } from "./components/create-poll-form";
 
 export default function Home() {
   return (
-    <main className="mx-auto max-w-2xl px-4 pt-5 pb-8">
+    <main className="mx-auto w-full max-w-2xl px-4 pt-5 pb-8">
       <header className="mb-5">
         <h1 className="text-3xl font-bold tracking-tight">Meeet</h1>
         <p className="mt-1 text-sm text-gray-500">

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TimeGrid } from "@/app/components/time-grid";
+import { buildGridLayout } from "@/lib/polls/layout";
 import {
   aggregateHeatmap,
   splitParticipantsBySlot,
@@ -121,6 +122,15 @@ export function PollView({
     [participants, availabilities],
   );
 
+  // 데스크톱에서 날짜가 적을 때 입력칸만 길어지지 않도록, 각 패널 폭을 격자의
+  // 최대 폭(시간 라벨 3.5rem + 열당 7.5rem)에 맞춰 제한한다. 이름 placeholder가
+  // 잘리지 않는 최소 폭(15rem)은 보장한다. 격자 열 폭 규칙은 time-grid.tsx와 맞물린다.
+  const dateCount = useMemo(
+    () => buildGridLayout(slots, timeZone).dateKeys.length,
+    [slots, timeZone],
+  );
+  const panelMaxWidth = `max(15rem, calc(3.5rem + ${dateCount * 7.5}rem))`;
+
   const slotById = useMemo(() => new Map(slots.map((s) => [s.id, s])), [slots]);
   const slotLabel = (slotId: string | null) => {
     const slot = slotId ? slotById.get(slotId) : undefined;
@@ -214,8 +224,13 @@ export function PollView({
         <p className="text-sm font-medium text-gray-700">{message}</p>
       )}
 
-      <div className="grid gap-8 md:grid-cols-2">
-        <section className={`min-w-0 space-y-3 ${step === "results" ? "hidden md:block" : ""}`}>
+      {/* 모바일은 한 컬럼 그대로. 데스크톱은 패널을 격자 폭만큼만 차지시키고 가운데 정렬해,
+          날짜가 적어도 빈 공간이 좌우 여백으로 균형 있게 빠지도록 한다. */}
+      <div className="flex flex-col gap-8 md:flex-row md:justify-center">
+        <section
+          style={{ "--panel-max": panelMaxWidth } as React.CSSProperties}
+          className={`min-w-0 space-y-3 md:flex-1 md:max-w-[var(--panel-max)] ${step === "results" ? "hidden md:block" : ""}`}
+        >
           <h2 className="hidden text-sm font-semibold text-gray-700 md:block">내 가능 시간</h2>
           <input
             aria-label="이름"
@@ -262,7 +277,10 @@ export function PollView({
           </div>
         </section>
 
-        <section className={`min-w-0 space-y-3 ${step === "edit" ? "hidden md:block" : ""}`}>
+        <section
+          style={{ "--panel-max": panelMaxWidth } as React.CSSProperties}
+          className={`min-w-0 space-y-3 md:flex-1 md:max-w-[var(--panel-max)] ${step === "edit" ? "hidden md:block" : ""}`}
+        >
           <div className="flex items-center justify-between md:block">
             <h2 className="text-sm font-semibold text-gray-700">그룹 현황</h2>
             <button

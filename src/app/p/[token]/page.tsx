@@ -13,7 +13,8 @@ export default async function PollPage({
   if (!data) notFound();
 
   return (
-    <main className="mx-auto max-w-4xl px-4 pt-4 pb-8 md:py-12">
+    // body가 flex-col이라 mx-auto만 있으면 main이 내용 폭으로 수축한다 — w-full로 강제.
+    <main className="mx-auto w-full max-w-4xl px-4 pt-4 pb-8 md:py-12">
       <ShareBanner token={token} />
       <PollView
         token={token}

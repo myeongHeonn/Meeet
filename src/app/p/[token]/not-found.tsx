@@ -13,7 +13,7 @@ export default function PollNotFound() {
   }, []);
 
   return (
-    <main className="mx-auto max-w-md px-4 py-20 text-center">
+    <main className="mx-auto w-full max-w-md px-4 py-20 text-center">
       <h1 className="text-lg font-semibold">이 폴을 찾을 수 없어요</h1>
       <p className="mt-2 text-sm text-gray-600">
         링크가 잘못됐거나, 후보 기간이 지나 만료된 폴일 수 있어요.

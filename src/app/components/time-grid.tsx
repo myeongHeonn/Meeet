@@ -76,7 +76,7 @@ export function TimeGrid(props: TimeGridProps) {
           aria-label={`slot-${slotId}`}
           data-slot-id={slotId}
           data-date-key={dateKey}
-          className={`h-7 w-20 border border-white ${
+          className={`h-7 border border-white ${
             selected ? "bg-gray-900" : "bg-gray-100"
           } ${props.disabled ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
           onPointerDown={(e) => {
@@ -118,7 +118,7 @@ export function TimeGrid(props: TimeGridProps) {
             ? `${count}/${props.totalParticipants}명: ${tally!.names.join(", ")}`
             : `0/${props.totalParticipants}명`
         }
-        className={`flex h-7 w-20 cursor-pointer items-center justify-center border border-white text-[10px] ${ratio > 0.5 ? "text-white" : "text-gray-900"} ${
+        className={`flex h-7 cursor-pointer items-center justify-center border border-white text-[10px] ${ratio > 0.5 ? "text-white" : "text-gray-900"} ${
           active ? "outline outline-2 -outline-offset-2 outline-amber-500" : ""
         }`}
         style={{
@@ -135,12 +135,26 @@ export function TimeGrid(props: TimeGridProps) {
 
   return (
     <div
-      className="inline-block align-top overflow-auto select-none max-w-full max-h-[55vh] touch-manipulation"
+      className="overflow-auto select-none max-w-full max-h-[55vh] touch-manipulation"
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onPointerLeave={onContainerLeave}
     >
-      <table className="border-separate border-spacing-0 text-xs">
+      {/* 날짜가 적을 때 좁은 격자가 남는 공간에 조금 차오르도록, 열당 5rem(최소)~7.5rem(최대)
+          사이에서 늘어난다. 최소를 넘는 날짜 수는 지금처럼 가로 스크롤. */}
+      <table
+        className="w-full table-fixed border-separate border-spacing-0 text-xs"
+        style={{
+          minWidth: `calc(3.5rem + ${layout.dateKeys.length * 5}rem)`,
+          maxWidth: `calc(3.5rem + ${layout.dateKeys.length * 7.5}rem)`,
+        }}
+      >
+        <colgroup>
+          <col className="w-14" />
+          {layout.dateKeys.map((dk) => (
+            <col key={dk} />
+          ))}
+        </colgroup>
         <thead>
           <tr>
             <th className="w-14 sticky top-0 left-0 z-20 bg-white" />
@@ -167,7 +181,7 @@ export function TimeGrid(props: TimeGridProps) {
                     {slotId ? (
                       renderCell(slotId, dk)
                     ) : (
-                      <div className="h-7 w-20 bg-gray-50" />
+                      <div className="h-7 bg-gray-50" />
                     )}
                   </td>
                 );
