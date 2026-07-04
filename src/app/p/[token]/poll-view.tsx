@@ -337,13 +337,17 @@ function SlotDetail({
   available: ParticipantRow[];
   unavailable: ParticipantRow[];
 }) {
+  // 빈 상태와 상세 상태의 높이를 맞춘다(min-h). hover로 내용이 바뀔 때마다
+  // 페이지 높이가 출렁여 전체 스크롤바가 생겼다 사라지는 것을 막는다.
   if (!label) {
     return (
-      <p className="text-xs text-gray-400">칸을 가리키면 여기에 명단이 표시됩니다.</p>
+      <div className="flex min-h-[9.5rem] items-center justify-center rounded-xl border border-dashed border-gray-200 p-3.5">
+        <p className="text-xs text-gray-400">칸을 가리키면 여기에 명단이 표시됩니다.</p>
+      </div>
     );
   }
   return (
-    <div className="space-y-2 rounded-xl border border-gray-200 p-3.5 text-sm">
+    <div className="min-h-[9.5rem] space-y-2 rounded-xl border border-gray-200 p-3.5 text-sm">
       <p className="font-semibold text-gray-800">{label}</p>
       <NameList
         title={`가능 ${available.length}명`}
