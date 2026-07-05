@@ -13,13 +13,11 @@
 <table>
   <tr>
     <td align="center"><b>폴 생성</b></td>
-    <td align="center"><b>내 가능 시간</b></td>
-    <td align="center"><b>그룹 현황</b></td>
+    <td align="center"><b>참가 (응답 · 현황)</b></td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/create.jpg" width="240" alt="폴 생성 화면" /></td>
-    <td><img src="docs/screenshots/edit.jpg" width="240" alt="내 가능 시간 화면" /></td>
-    <td><img src="docs/screenshots/group.jpg" width="240" alt="그룹 현황 화면" /></td>
+    <td><img src="docs/screenshots/group.jpg" width="240" alt="참가 화면" /></td>
   </tr>
 </table>
 
