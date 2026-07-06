@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { pad2 } from "@/lib/datetime";
 
 interface Props {
@@ -20,8 +20,13 @@ export function DatePickerCalendar({ selected, onToggle }: Props) {
     return { year: now.getFullYear(), month: now.getMonth() };
   });
 
-  const now = new Date();
-  const todayKey = toKey(now.getFullYear(), now.getMonth(), now.getDate());
+  const [today, setToday] = useState(() => new Date());
+
+  useEffect(() => {
+    setToday(new Date());
+  }, []);
+
+  const todayKey = toKey(today.getFullYear(), today.getMonth(), today.getDate());
 
   const startWeekday = new Date(view.year, view.month, 1).getDay();
   const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
