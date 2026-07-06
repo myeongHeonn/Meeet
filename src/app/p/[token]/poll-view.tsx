@@ -299,7 +299,7 @@ export function PollView({
               onClick={() => setStep("edit")}
               className="text-sm text-gray-400 hover:text-gray-600 md:hidden"
             >
-              ← 내 가능 시간
+              ← 응답 수정하기
             </button>
           </div>
           <TimeGrid
