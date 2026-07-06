@@ -66,6 +66,20 @@ export function TimeGrid(props: TimeGridProps) {
     if (props.mode === "heatmap") props.onSlotHover?.(null);
   };
 
+  const columnSlotIds = (dateKey: string): string[] =>
+    layout.timeKeys
+      .map((tk) => layout.cell.get(cellKey(dateKey, tk)))
+      .filter((id): id is string => Boolean(id));
+
+  const allSlotIds = (): string[] => layout.dateKeys.flatMap(columnSlotIds);
+
+  // 대상 슬롯 중 하나라도 선택되어 있지 않으면 전체 채움, 전부 선택돼 있으면 전체 해제(FR-14/15).
+  function toggleAll(slotIds: string[]) {
+    if (props.mode !== "edit") return;
+    const next = !slotIds.every((id) => props.value.has(id));
+    for (const id of slotIds) props.onToggle(id, next);
+  }
+
   function renderCell(slotId: string, dateKey: string) {
     if (props.mode === "edit") {
       const selected = props.value.has(slotId);
@@ -157,15 +171,57 @@ export function TimeGrid(props: TimeGridProps) {
         </colgroup>
         <thead>
           <tr>
-            <th className="w-14 sticky top-0 left-0 z-20 bg-white" />
-            {layout.dateKeys.map((dk) => (
-              <th
-                key={dk}
-                className="px-2 py-1 text-sm font-medium whitespace-nowrap text-gray-700 sticky top-0 z-10 bg-white"
-              >
-                {formatDateLabel(dk)}
-              </th>
-            ))}
+            <th className="w-14 sticky top-0 left-0 z-20 bg-white">
+              {props.mode === "edit" &&
+                (() => {
+                  const ids = allSlotIds();
+                  const allSelected = ids.length > 0 && ids.every((id) => props.value.has(id));
+                  return (
+                    <button
+                      type="button"
+                      disabled={props.disabled}
+                      aria-pressed={allSelected}
+                      aria-label={allSelected ? "전체 해제" : "전체 선택"}
+                      onClick={() => toggleAll(ids)}
+                      className="w-full text-[10px] font-medium text-gray-400 hover:text-gray-700 disabled:pointer-events-none disabled:opacity-50"
+                    >
+                      {allSelected ? "전체 해제" : "전체 선택"}
+                    </button>
+                  );
+                })()}
+            </th>
+            {layout.dateKeys.map((dk) => {
+              const label = formatDateLabel(dk);
+              if (props.mode !== "edit") {
+                return (
+                  <th
+                    key={dk}
+                    className="px-2 py-1 text-sm font-medium whitespace-nowrap text-gray-700 sticky top-0 z-10 bg-white"
+                  >
+                    {label}
+                  </th>
+                );
+              }
+              const ids = columnSlotIds(dk);
+              const allSelected = ids.length > 0 && ids.every((id) => props.value.has(id));
+              return (
+                <th
+                  key={dk}
+                  className="px-0 py-0 sticky top-0 z-10 bg-white"
+                >
+                  <button
+                    type="button"
+                    disabled={props.disabled}
+                    aria-pressed={allSelected}
+                    aria-label={`${label} 전체 ${allSelected ? "해제" : "선택"}`}
+                    onClick={() => toggleAll(ids)}
+                    className="w-full px-2 py-1 text-sm font-medium whitespace-nowrap text-gray-700 hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    {label}
+                  </button>
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>

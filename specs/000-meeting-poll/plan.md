@@ -222,3 +222,38 @@ DB에 직접 의존하는 mutation/query는 MVP에서 통합 테스트를 두지
   participants props에는 절대 싣지 않는다(localStorage에만).
 - 검증: 단위 테스트(validation editToken optional, poll-view 프리필) + 로컬 DB E2E
   (test 제출 → 토큰 저장 → test1로 재제출 → 참가자 1명 유지 확인).
+
+## 9. 개정: 일괄 선택 도구 (FR-14/15, 2026-07-06)
+
+새 데이터 모델/API 없음 — `time-grid.tsx`(mode="edit")에만 상호작용을 추가한다.
+서버로 가는 값은 여전히 기존 `selectedSlotIds`(Set) 하나뿐이고, 제출 경로(FR-6)도 그대로다.
+
+- **배치**: 격자 좌상단의 빈 sticky 코너 셀(현재 `<th className="w-14 sticky top-0 left-0..." />`,
+  time-grid.tsx:160)을 "전체 선택/해제" 토글 버튼으로 바꾼다(스프레드시트의 전체선택 코너와
+  같은 자리 재사용, 별도 UI 공간 불필요). 각 날짜 컬럼 헤더(`formatDateLabel` 렌더하는 `<th>`,
+  time-grid.tsx:161-168)는 `mode="edit"`일 때만 클릭 가능한 버튼으로 바꿔 그 날짜 전체를 토글한다
+  (`mode="heatmap"`에서는 지금처럼 순수 텍스트, 변경 없음).
+- **토글 판정**: 대상 슬롯 집합(코너=격자 전체 슬롯, 헤더=그 날짜 컬럼 슬롯)에서 하나라도
+  `props.value`(선택 Set)에 없으면 `next=true`로 전체를 채우고, 전부 있으면 `next=false`로
+  전체를 비운다(FR-14/15의 indeterminate 규칙). 컬럼별 슬롯 목록은 `layout.timeKeys.map(tk =>
+  layout.cell.get(cellKey(dk, tk)))`로, 전체 슬롯 목록은 `layout.dateKeys` 전체에 대해 같은 방식으로
+  구한다(이미 있는 `layout`에서 파생 — 새 상태 불필요).
+- **적용 방법**: 새 prop을 추가하지 않고 기존 `props.onToggle(slotId, next)`를 대상 슬롯마다
+  반복 호출한다. `poll-view.tsx`의 `setSelected((prev) => withSetItem(prev, slotId, next))`는
+  함수형 업데이트라 같은 렌더 안에서 여러 번 호출돼도 순차 합성되어 정확하다(격자 상한
+  1000칸 기준 반복 호출 비용은 무시 가능, spec §8 격자 상한 참고).
+- **비활성 연동**: 코너/헤더 버튼은 `props.disabled`(FR-6, 이름 미입력 시 격자 비활성)를
+  그대로 물려받아 `disabled`+`pointer-events-none` 처리한다. 새 disabled 조건을 만들지 않는다.
+- **접근성/라벨**: 코너 버튼은 `aria-label="전체 선택 또는 해제"`, 현재 전부 선택 상태면
+  버튼 텍스트/aria-label을 "전체 해제"로 바꿔 방향을 알 수 있게 한다. 날짜 헤더 버튼도
+  동일하게 `aria-pressed`로 그 날짜의 전부-선택 여부를 노출한다.
+- **영향 파일**: `src/app/components/time-grid.tsx`(수정), `time-grid.test.tsx`(테스트 추가).
+  `poll-view.tsx`/API/스키마는 변경 없음.
+- **테스트 (RTL, time-grid.test.tsx 추가)**:
+  - 코너 버튼 클릭 → 격자 전체가 선택 상태가 되는지, 다시 클릭 → 전체 해제되는지.
+  - 날짜 헤더 버튼 클릭 → 그 날짜 컬럼만 토글되고 다른 날짜는 그대로인지.
+  - 일부만 선택된 상태에서 코너/헤더 클릭 시 "채우기" 방향으로 동작하는지(비우기 아님).
+  - `disabled`일 때 코너/헤더 버튼 클릭이 아무 효과가 없는지.
+  - `mode="heatmap"`에서는 코너/헤더가 버튼이 아닌 텍스트 그대로인지(회귀 방지).
+- **구현 순서**: T11 — `time-grid.tsx` 수정 + 테스트 → `npm run lint`/`test`/`build` 통과 확인 →
+  spec.md의 해당 리비전 줄에 "구현 완료" 기록.
