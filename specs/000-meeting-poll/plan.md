@@ -257,3 +257,56 @@ DB에 직접 의존하는 mutation/query는 MVP에서 통합 테스트를 두지
   - `mode="heatmap"`에서는 코너/헤더가 버튼이 아닌 텍스트 그대로인지(회귀 방지).
 - **구현 순서**: T11 — `time-grid.tsx` 수정 + 테스트 → `npm run lint`/`test`/`build` 통과 확인 →
   spec.md의 해당 리비전 줄에 "구현 완료" 기록.
+
+## 10. 개정: 터치 드래그 칠하기 (FR-16, 2026-09-29)
+
+새 데이터 모델/API 없음 — `time-grid.tsx`(mode="edit")에만 상호작용을 추가한다. 서버로 가는
+값은 여전히 `selectedSlotIds`(Set) 하나이고 제출 경로(FR-6)도 그대로다.
+
+- **왜 지금은 안 되나**: 두 가지가 겹쳐 있다. (1) `onPointerDown`에서 `pointerType === "touch"`
+  이면 즉시 return해 드래그를 막아두었다(time-grid.tsx:99). 격자가 `overflow-auto max-h-[55vh]`
+  세로 스크롤 영역인데 칠하는 방향도 세로라 제스처가 충돌하기 때문이다. (2) 가드를 풀어도
+  동작하지 않는다 — 터치는 첫 요소가 포인터를 암묵 캡처하므로 손가락이 다른 칸으로 옮겨가도
+  `onPointerEnter`가 발생하지 않는데, 현재 드래그는 전적으로 거기에 의존한다.
+- **가르는 기준**: "길게 누름 → 칠하기" / "바로 쓸어넘김 → 스크롤". 누른 뒤 `LONG_PRESS_MS`
+  (300ms) 동안 이동이 `MOVE_TOLERANCE_PX`(8px) 이내로 유지되면 칠하기 모드로 진입하고,
+  그 전에 임계치를 넘으면 타이머를 취소해 네이티브 스크롤에 맡긴다.
+- **데스크톱 불변 원칙**: 마우스/펜 경로(`onPointerDown` 즉시 칠하기 + `onPointerEnter` 확장)는
+  건드리지 않는다. 터치는 컨테이너 레벨 `onPointerMove` + `document.elementFromPoint`로 **별도
+  경로**를 추가하고, 실제 칠하는 판정(같은 날짜 컬럼 한정, 목표 상태로 통일)만 공용 헬퍼로
+  뽑아 공유한다. 한 경로로 합치면 코드는 줄지만 잘 동작하는 데스크톱 드래그를 회귀 위험에
+  올리게 되므로 하지 않는다.
+- **칸 찾기**: 칠하기 모드 중 `pointermove`에서 `document.elementFromPoint(clientX, clientY)`로
+  손가락 아래 요소를 얻고 `data-slot-id` / `data-date-key`를 읽는다(두 속성은 이미 렌더에
+  들어 있다, time-grid.tsx:91-92). 드래그 시작 컬럼과 다르면 무시한다(기존 가로 드래그 차단과
+  동일 규칙).
+- **스크롤 잠금**: `touch-action`을 제스처 도중에 바꿔도 이미 시작된 제스처에는 적용되지 않으므로,
+  컨테이너에 `useEffect`로 non-passive `touchmove` 리스너를 달아 칠하기 모드일 때만
+  `preventDefault()`한다. 롱프레스 단계에서는 아직 스크롤이 시작되지 않았으므로 이 시점의
+  차단이 유효하다. 모드 종료 시 잠금을 푼다.
+- **중복 토글 방지**: 롱프레스로 칠한 뒤 손을 떼면 click이 이어서 발생해 마지막 칸이 한 번 더
+  뒤집힌다. 칠하기 모드를 거친 제스처는 `suppressClick` 플래그를 세우고, `onClick`에서 이를
+  보면 무시한 뒤 플래그를 지운다. 짧은 탭(모드 미진입)은 지금처럼 `onClick`이 토글한다.
+- **종료 처리**: `pointerup` / `pointercancel` / 컨테이너 `pointerleave`에서 타이머를 지우고
+  모드를 해제하며 스크롤을 복구한다. 이미 칠해진 칸은 되돌리지 않는다.
+- **피드백**: 모드 진입 시 `navigator.vibrate?.(10)`으로 짧은 진동을 준다. 미지원 환경에서는
+  옵셔널 체이닝으로 조용히 건너뛰고 기능은 동일하게 동작한다.
+- **비활성 연동**: `props.disabled`(FR-6)면 타이머 자체를 시작하지 않는다. 새 disabled 조건을
+  만들지 않는다.
+- **접근성**: 칸의 `role="checkbox"` / `aria-checked` / `aria-label`은 그대로 둔다. 롱프레스는
+  터치 전용 추가 경로라 키보드·스크린리더 동선에 영향이 없다.
+- **영향 파일**: `src/app/components/time-grid.tsx`(수정), `time-grid.test.tsx`(테스트 추가),
+  `README.md`(모바일 조작 설명 갱신). `poll-view.tsx`/API/스키마는 변경 없음.
+- **테스트 (RTL, time-grid.test.tsx 추가)**: jsdom은 레이아웃이 없어 `document.elementFromPoint`가
+  의미 있는 값을 주지 않으므로, 해당 함수를 스텁해 좌표→칸 매핑을 흉내 낸다. 타이머는
+  `jest.useFakeTimers()`로 진행시킨다.
+  - 터치로 누른 뒤 300ms 경과 → 그 칸이 토글되고 칠하기 모드로 들어가는지.
+  - 칠하기 모드에서 같은 컬럼의 다른 칸으로 이동 → 처음 칸과 같은 방향으로 칠해지는지.
+  - 다른 날짜 컬럼으로 이동 → 칠해지지 않는지.
+  - 300ms 전에 임계치를 넘겨 움직이면 → 칠하기 모드로 들어가지 않고 아무것도 토글되지 않는지.
+  - 짧은 탭(모드 미진입) → 기존처럼 한 칸만 토글되는지(회귀 방지).
+  - 롱프레스 후 손을 뗄 때 이어지는 click이 마지막 칸을 다시 토글하지 않는지.
+  - `disabled`면 롱프레스해도 아무 일이 없는지.
+  - 마우스 드래그(pointerType="mouse")가 기존과 동일하게 동작하는지(회귀 방지).
+- **구현 순서**: T12 — `time-grid.tsx` 수정 + 테스트 추가 → `npm run lint`/`test`/`build` 통과 →
+  README의 "모바일은 탭, 데스크톱은 드래그" 문구 갱신 → spec.md의 해당 리비전 줄에 "구현 완료" 기록.
