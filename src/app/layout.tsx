@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const TITLE = "Meeet — 미팅 시간 맞추기";
+const TITLE = "Meeet - 미팅 시간 맞추기";
 const DESCRIPTION =
   "여러 명의 미팅 시간을 빠르게 정하세요. 가입 없이 바로 만들고 공유하세요.";
 
