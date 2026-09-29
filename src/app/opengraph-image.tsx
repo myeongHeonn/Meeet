@@ -10,7 +10,7 @@ import { ImageResponse } from "next/og";
 // 겹침은 overflow:hidden으로 만든다.
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Meeet — 미팅 시간 맞추기";
+export const alt = "Meeet - 미팅 시간 맞추기";
 
 const BAR = "#e5e7eb";
 const AMBER = "#f59e0b";

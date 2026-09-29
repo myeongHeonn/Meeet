@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getPollByToken } from "@/lib/polls/queries";
 import { PollView } from "./poll-view";
+
+// 폴 페이지는 토큰을 아는 사람만 보는 곳이라 검색 결과에 싣지 않는다(spec §9).
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function PollPage({
   params,
