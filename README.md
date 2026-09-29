@@ -4,7 +4,7 @@
 후보 날짜만 고르면 링크가 하나 생기고, 참가자들은 그 링크에서 가능한 시간을 칠하기만
 하면 됩니다. 회원가입도, 로그인도 없습니다.
 
-**[meeet-sable.vercel.app](https://meeet-sable.vercel.app)** 에서 바로 사용해보세요.
+**[meeet.kr](https://meeet.kr)** 에서 바로 사용해보세요.
 
 ---
 
