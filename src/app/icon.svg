@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Meeet">
+  <!--
+    파비콘용 정사각 압축본. 원형(가로 1.75:1)은 docs/logo/logo.svg 참고.
+    정사각에 그대로 넣으면 16px에서 막대가 실처럼 얇아지므로, 막대를 굵게 하고
+    길이 차이를 줄여 캔버스를 채웠다. 높이:간격 = 12:7 (원본 110:60과 거의 같은 비율).
+    세 막대가 모두 겹치는 x 구간은 17~43이고 앰버 막대(26~38)는 그 안에 있다.
+  -->
+  <defs>
+    <clipPath id="band">
+      <rect x="26" y="7" width="12" height="50" rx="6" />
+    </clipPath>
+  </defs>
+
+  <g fill="#e5e7eb">
+    <rect x="5" y="7" width="38" height="12" rx="6" />
+    <rect x="11" y="26" width="48" height="12" rx="6" />
+    <rect x="17" y="45" width="34" height="12" rx="6" />
+  </g>
+
+  <rect x="26" y="7" width="12" height="50" rx="6" fill="#f59e0b" />
+
+  <g fill="#dc8f0a" clip-path="url(#band)">
+    <rect x="26" y="7" width="12" height="12" />
+    <rect x="26" y="26" width="12" height="12" />
+    <rect x="26" y="45" width="12" height="12" />
+  </g>
+</svg>
