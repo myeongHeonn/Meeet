@@ -33,6 +33,10 @@ export const metadata: Metadata = {
     type: "website",
   },
   twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
+  // 네이버 서치어드바이저 소유 확인용. 지우면 확인이 풀린다.
+  verification: {
+    other: { "naver-site-verification": "a153853b8ae1b68b68378eb3f51022e9d71b2b9c" },
+  },
 };
 
 export default function RootLayout({
