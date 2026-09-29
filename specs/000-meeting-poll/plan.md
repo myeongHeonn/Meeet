@@ -283,30 +283,60 @@ DB에 직접 의존하는 mutation/query는 MVP에서 통합 테스트를 두지
 - **스크롤 잠금**: `touch-action`을 제스처 도중에 바꿔도 이미 시작된 제스처에는 적용되지 않으므로,
   컨테이너에 `useEffect`로 non-passive `touchmove` 리스너를 달아 칠하기 모드일 때만
   `preventDefault()`한다. 롱프레스 단계에서는 아직 스크롤이 시작되지 않았으므로 이 시점의
-  차단이 유효하다. 모드 종료 시 잠금을 푼다.
-- **중복 토글 방지**: 롱프레스로 칠한 뒤 손을 떼면 click이 이어서 발생해 마지막 칸이 한 번 더
-  뒤집힌다. 칠하기 모드를 거친 제스처는 `suppressClick` 플래그를 세우고, `onClick`에서 이를
-  보면 무시한 뒤 플래그를 지운다. 짧은 탭(모드 미진입)은 지금처럼 `onClick`이 토글한다.
-- **종료 처리**: `pointerup` / `pointercancel` / 컨테이너 `pointerleave`에서 타이머를 지우고
-  모드를 해제하며 스크롤을 복구한다. 이미 칠해진 칸은 되돌리지 않는다.
+  차단이 유효하다. 모드 종료 시 잠금을 푼다. 컨테이너 ref와 `useEffect`는 `layout.dateKeys.length
+  === 0` 조기 return **앞**에 둔다(Hooks 규칙 — 기존 `useRef`와 같은 위치).
+- **가장자리 자동 스크롤 없음**: 스크롤이 잠기므로 한 제스처로는 보이는 칸까지만 칠한다. 가려진 칸은
+  스크롤 후 다시 롱프레스(spec §3 비목표). 구현할 것 없음 — 이 경우 아래 "격자 밖" 규칙대로 종료된다.
+- **중복 토글 방지**: 롱프레스 후 제자리에서 손을 떼면 click이 이어서 발생해 마지막 칸이 한 번 더
+  뒤집힌다. 칠하기 모드에 진입하면 `suppressClick = true`를 세우고 `onClick`은 이를 보면 무시한다.
+  단 드래그 후에는 브라우저가 click을 **보내지 않는 경우가 많으므로** 플래그를 click에서 지우는 방식은
+  쓰지 않는다(플래그가 남아 다음 정상 탭을 삼킨다). 대신 **터치 `pointerdown`마다 `false`로 초기화**한다.
+  짧은 탭(모드 미진입)은 지금처럼 `onClick`이 토글한다.
+- **격자 밖 판정**: 터치는 첫 칸이 포인터를 암묵 캡처하므로, 캡처 중에는 컨테이너 `pointerleave`가
+  발생하지 않는다(경계 이벤트가 캡처 대상 기준으로만 난다). 따라서 칠하기 모드 중 `pointermove`에서
+  `clientX/clientY`가 컨테이너 `getBoundingClientRect()` 밖이면 모드를 종료한다. 한 번 종료되면
+  다시 들어와도 재개하지 않는다.
+- **종료 처리**: `pointerup` / `pointercancel` / 위 격자 밖 판정에서 타이머를 지우고 모드를 해제하며
+  스크롤을 복구한다. 기존 컨테이너 `pointerleave`의 `endDrag`는 마우스용으로 그대로 둔다. 이미 칠해진
+  칸은 되돌리지 않는다.
+- **OS 길게 누르기 차단**: 칠하는 중 손가락이 멈춰 있으면 Android는 약 500ms에 `contextmenu`를
+  보내고, iOS는 콜아웃을 띄울 수 있다. 터치 누름이 진행 중(타이머 대기 또는 칠하기 모드)일 때
+  컨테이너 `onContextMenu`에서 `preventDefault()`하고, 편집 칸에 `-webkit-touch-callout: none`을
+  준다(Tailwind 임의 속성 `[-webkit-touch-callout:none]`). 텍스트 선택은 기존 `select-none`이 막는다.
 - **피드백**: 모드 진입 시 `navigator.vibrate?.(10)`으로 짧은 진동을 준다. 미지원 환경에서는
   옵셔널 체이닝으로 조용히 건너뛰고 기능은 동일하게 동작한다.
 - **비활성 연동**: `props.disabled`(FR-6)면 타이머 자체를 시작하지 않는다. 새 disabled 조건을
   만들지 않는다.
+- **안내 문구**: `mode="edit"`일 때 스크롤 컨테이너 바로 위에 "길게 눌러 드래그하면 여러 칸을 칠할 수
+  있어요"를 `<p>`로 렌더한다. `hidden pointer-coarse:block`(Tailwind 4 내장 `@media (pointer: coarse)`
+  변형)으로 터치 기기에서만 보이게 해 JS 판별·하이드레이션 불일치가 없다. 히트맵 모드에서는 렌더하지
+  않는다. TimeGrid 안에 두어 `poll-view.tsx`는 건드리지 않는다(반환을 Fragment로 감싼다 — 부모
+  섹션의 `space-y-3`이 간격을 준다).
 - **접근성**: 칸의 `role="checkbox"` / `aria-checked` / `aria-label`은 그대로 둔다. 롱프레스는
   터치 전용 추가 경로라 키보드·스크린리더 동선에 영향이 없다.
 - **영향 파일**: `src/app/components/time-grid.tsx`(수정), `time-grid.test.tsx`(테스트 추가),
   `README.md`(모바일 조작 설명 갱신). `poll-view.tsx`/API/스키마는 변경 없음.
-- **테스트 (RTL, time-grid.test.tsx 추가)**: jsdom은 레이아웃이 없어 `document.elementFromPoint`가
-  의미 있는 값을 주지 않으므로, 해당 함수를 스텁해 좌표→칸 매핑을 흉내 낸다. 타이머는
-  `jest.useFakeTimers()`로 진행시킨다.
+- **테스트 환경 준비**: 설치된 jsdom(26.1)에는 `PointerEvent`도 `document.elementFromPoint`도 없다.
+  RTL `fireEvent`는 생성자가 없으면 일반 `Event`로 대체하므로 `pointerType`/`clientX`/`clientY`가
+  **전달되지 않는다**(@testing-library/dom events.js). 따라서
+  - `time-grid.test.tsx` 상단에서 `MouseEvent`를 상속해 `pointerId`/`pointerType`을 받는 최소
+    `PointerEvent` 폴리필을 `window`에 등록한다(다른 테스트에 영향 없도록 이 파일 한정).
+  - `elementFromPoint`는 원래 없는 함수라 `jest.spyOn`이 불가 — `document.elementFromPoint = jest.fn()`으로
+    직접 할당하고 `afterEach`에서 제거한다. 좌표→칸 매핑은 이 목으로 흉내 낸다.
+  - 격자 밖 판정용으로 컨테이너의 `getBoundingClientRect`도 목으로 고정한다.
+  - 타이머는 `jest.useFakeTimers()`로 진행시킨다.
+- **테스트 (RTL, time-grid.test.tsx 추가)**:
   - 터치로 누른 뒤 300ms 경과 → 그 칸이 토글되고 칠하기 모드로 들어가는지.
   - 칠하기 모드에서 같은 컬럼의 다른 칸으로 이동 → 처음 칸과 같은 방향으로 칠해지는지.
   - 다른 날짜 컬럼으로 이동 → 칠해지지 않는지.
   - 300ms 전에 임계치를 넘겨 움직이면 → 칠하기 모드로 들어가지 않고 아무것도 토글되지 않는지.
   - 짧은 탭(모드 미진입) → 기존처럼 한 칸만 토글되는지(회귀 방지).
   - 롱프레스 후 손을 뗄 때 이어지는 click이 마지막 칸을 다시 토글하지 않는지.
+  - 롱프레스+드래그 후 click 없이 끝난 다음, 새 짧은 탭이 정상적으로 토글되는지(플래그 누수 회귀 방지).
+  - 칠하기 모드 중 격자 밖 좌표로 이동하면 모드가 끝나고, 다시 안으로 들어와도 칠해지지 않는지.
+  - 칠하기 모드 중 `contextmenu`가 `preventDefault`되는지.
   - `disabled`면 롱프레스해도 아무 일이 없는지.
+  - 안내 문구가 edit 모드에서만 렌더되고 heatmap 모드에는 없는지.
   - 마우스 드래그(pointerType="mouse")가 기존과 동일하게 동작하는지(회귀 방지).
 - **구현 순서**: T12 — `time-grid.tsx` 수정 + 테스트 추가 → `npm run lint`/`test`/`build` 통과 →
   README의 "모바일은 탭, 데스크톱은 드래그" 문구 갱신 → spec.md의 해당 리비전 줄에 "구현 완료" 기록.
