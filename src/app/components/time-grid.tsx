@@ -47,6 +47,10 @@ interface TouchPaintState extends Stroke {
   startX: number;
   startY: number;
   lastSlotId: string | null;
+  // 마지막 손가락 좌표. 자동 스크롤 루프가 손가락이 멈춰 있어도 그 아래 칸을 칠하는 데 쓴다.
+  lastX: number;
+  lastY: number;
+  scrollRaf: number | null; // 가장자리 자동 스크롤 rAF 루프
   // 칠하기 모드를 거친 제스처 뒤의 click을 무시한다. 드래그 후엔 click이 안 오는 경우가 많아
   // click에서 지우지 않고 다음 터치 pointerdown에서 초기화한다.
   suppressClick: boolean;
@@ -54,6 +58,17 @@ interface TouchPaintState extends Stroke {
 
 const LONG_PRESS_MS = 300;
 const MOVE_TOLERANCE_PX = 8;
+const AUTO_SCROLL_EDGE_PX = 48;
+const AUTO_SCROLL_MAX_PX = 14; // 프레임당
+
+// 손가락 y가 보이는 격자 구간 [top, bottom]의 가장자리에 가까울수록 빠르게, 밖이면 최대 속도로
+// 스크롤할 양(위 음수/아래 양수). 가운데면 0.
+export function autoScrollDelta(y: number, top: number, bottom: number): number {
+  const ratio = (depth: number) => Math.min(1, depth / AUTO_SCROLL_EDGE_PX);
+  if (y < top + AUTO_SCROLL_EDGE_PX) return -AUTO_SCROLL_MAX_PX * ratio(top + AUTO_SCROLL_EDGE_PX - y);
+  if (y > bottom - AUTO_SCROLL_EDGE_PX) return AUTO_SCROLL_MAX_PX * ratio(y - (bottom - AUTO_SCROLL_EDGE_PX));
+  return 0;
+}
 
 function formatDateLabel(dateKey: string): string {
   // 정오 기준 Date로 만들어 로컬 변환 시 요일이 밀리지 않게 한다.
@@ -79,6 +94,9 @@ export function TimeGrid(props: TimeGridProps) {
     startX: 0,
     startY: 0,
     lastSlotId: null,
+    lastX: 0,
+    lastY: 0,
+    scrollRaf: null,
     suppressClick: false,
   });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -97,6 +115,7 @@ export function TimeGrid(props: TimeGridProps) {
     return () => {
       el.removeEventListener("touchmove", onTouchMove);
       if (t.timer) clearTimeout(t.timer);
+      if (t.scrollRaf !== null) cancelAnimationFrame(t.scrollRaf);
     };
   }, [isEmpty]);
 
@@ -121,6 +140,8 @@ export function TimeGrid(props: TimeGridProps) {
     if (t.timer) clearTimeout(t.timer);
     t.timer = null;
     t.painting = false;
+    if (t.scrollRaf !== null) cancelAnimationFrame(t.scrollRaf);
+    t.scrollRaf = null;
   };
 
   const startTouchPress = (
@@ -159,25 +180,50 @@ export function TimeGrid(props: TimeGridProps) {
       return;
     }
     if (!t.painting) return;
-    // 캡처 중엔 컨테이너 pointerleave가 오지 않으므로 좌표로 격자 밖을 판정한다.
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (
-      e.clientX < rect.left ||
-      e.clientX > rect.right ||
-      e.clientY < rect.top ||
-      e.clientY > rect.bottom
-    ) {
-      endTouch();
-      return;
-    }
+    // 격자 밖으로 나가도 모드는 유지한다 — 칸이 아닌 곳에선 칠하지 않을 뿐이고, 위/아래로 나가면 자동 스크롤된다.
+    t.lastX = e.clientX;
+    t.lastY = e.clientY;
+    paintAt(e.clientX, e.clientY);
+    if (t.scrollRaf === null) t.scrollRaf = requestAnimationFrame(autoScrollStep);
+  };
+
+  // 좌표 아래가 이 격자의 칸이면 현재 터치 획으로 칠한다.
+  const paintAt = (x: number, y: number) => {
+    const t = touch.current;
+    const el = containerRef.current;
     const cellEl = document
-      .elementFromPoint(e.clientX, e.clientY)
+      .elementFromPoint(x, y)
       ?.closest<HTMLElement>("[data-slot-id][data-date-key]");
-    if (!cellEl || !e.currentTarget.contains(cellEl)) return;
+    if (!el || !cellEl || !el.contains(cellEl)) return;
     const { slotId, dateKey } = cellEl.dataset;
     if (!slotId || !dateKey || slotId === t.lastSlotId) return;
     t.lastSlotId = slotId;
     paint(t, slotId, dateKey);
+  };
+
+  // 칠하기 모드 중 손가락이 보이는 격자의 위/아래 가장자리 근처면 그 방향으로 스크롤하고, 새로 손가락 아래
+  // 들어온 칸을 칠한다. 격자가 끝까지 스크롤됐는데 화면 밖으로 이어져 있으면 페이지를 스크롤한다.
+  const autoScrollStep = () => {
+    const t = touch.current;
+    const el = containerRef.current;
+    t.scrollRaf = null;
+    if (!t.painting || !el) return;
+    const rect = el.getBoundingClientRect();
+    const dy = autoScrollDelta(
+      t.lastY,
+      Math.max(rect.top, 0),
+      Math.min(rect.bottom, window.innerHeight),
+    );
+    if (dy === 0) return;
+    const before = el.scrollTop;
+    el.scrollTop = before + dy;
+    if (el.scrollTop === before) {
+      if ((dy > 0 && rect.bottom > window.innerHeight) || (dy < 0 && rect.top < 0)) {
+        window.scrollBy(0, dy);
+      }
+    }
+    paintAt(t.lastX, t.lastY);
+    t.scrollRaf = requestAnimationFrame(autoScrollStep);
   };
 
   const onContainerLeave = () => {
