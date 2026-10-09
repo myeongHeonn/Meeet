@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import { TimeGrid, autoScrollDelta } from "./time-grid";
+import { TimeGrid, autoScrollDelta, strokeChanges } from "./time-grid";
 
 // jsdom에는 PointerEvent가 없어 fireEvent가 일반 Event로 대체하고 pointerType/좌표를 버린다.
 // 이 파일 한정으로 최소 폴리필을 둔다(jest는 테스트 파일마다 환경을 새로 만든다).
@@ -294,6 +294,18 @@ describe("TimeGrid (touch paint, FR-16)", () => {
     expect(onToggle.mock.calls).toEqual([["s3", true]]);
   });
 
+  it("restores cells when the finger moves back toward the start", () => {
+    const onToggle = renderGrid();
+    longPress("s1", 10);
+    fireEvent.pointerMove(cell("s1"), touchAt(40));
+    fireEvent.pointerMove(cell("s1"), touchAt(10));
+    expect(onToggle.mock.calls).toEqual([
+      ["s1", true],
+      ["s2", true],
+      ["s2", false],
+    ]);
+  });
+
   it("keeps paint mode when the finger leaves the grid and paints again on return", () => {
     const onToggle = renderGrid();
     longPress("s1", 10);
@@ -472,5 +484,102 @@ describe("autoScrollDelta", () => {
   it("scrolls at full speed outside the grid", () => {
     expect(autoScrollDelta(-50, 0, 300)).toBe(-14);
     expect(autoScrollDelta(400, 0, 300)).toBe(14);
+  });
+});
+
+describe("TimeGrid (range painting, FR-6)", () => {
+  // 한 날짜 컬럼에 연속된 4칸 s1~s4.
+  const columnSlots = ["s1", "s2", "s3", "s4"].map((id, i) => ({
+    id,
+    startsAt: new Date(Date.UTC(2026, 6, 30, 9, i * 30)).toISOString(),
+  }));
+
+  function renderGrid(value: Set<string> = new Set()) {
+    const onToggle = jest.fn();
+    render(
+      <TimeGrid
+        mode="edit"
+        slots={columnSlots}
+        timeZone="UTC"
+        value={value}
+        onToggle={onToggle}
+      />,
+    );
+    return onToggle;
+  }
+
+  const cell = (id: string) => screen.getByLabelText(`slot-${id}`);
+
+  it("fills the cells skipped by a fast mouse drag", () => {
+    const onToggle = renderGrid();
+    fireEvent.pointerDown(cell("s1"), { pointerType: "mouse" });
+    fireEvent.pointerEnter(cell("s4"), { pointerType: "mouse" });
+    expect(onToggle.mock.calls).toEqual([
+      ["s1", true],
+      ["s2", true],
+      ["s3", true],
+      ["s4", true],
+    ]);
+  });
+
+  it("restores cells to their pre-drag state when the mouse drag shrinks back", () => {
+    // s3는 원래 선택돼 있었다 — 구간에서 빠지면 지워지는 게 아니라 원래대로(선택) 돌아와야 한다.
+    const onToggle = renderGrid(new Set(["s3"]));
+    fireEvent.pointerDown(cell("s1"), { pointerType: "mouse" });
+    fireEvent.pointerEnter(cell("s4"), { pointerType: "mouse" });
+    onToggle.mockClear();
+    fireEvent.pointerEnter(cell("s2"), { pointerType: "mouse" });
+    expect(onToggle.mock.calls).toEqual([["s4", false]]);
+  });
+
+  it("paints upward from the start cell", () => {
+    const onToggle = renderGrid();
+    fireEvent.pointerDown(cell("s3"), { pointerType: "mouse" });
+    fireEvent.pointerEnter(cell("s1"), { pointerType: "mouse" });
+    expect(onToggle.mock.calls).toEqual([
+      ["s3", true],
+      ["s1", true],
+      ["s2", true],
+    ]);
+  });
+});
+
+describe("strokeChanges", () => {
+  const ids = ["a", "b", "c", "d"];
+  const none = new Map(ids.map((id) => [id, false]));
+
+  it("sets every cell between the anchor and the target cell", () => {
+    expect(strokeChanges(ids, 0, 2, true, none, none)).toEqual([
+      ["a", true],
+      ["b", true],
+      ["c", true],
+    ]);
+  });
+
+  it("reverts cells that fall out of the range to their original state", () => {
+    const applied = new Map([
+      ["a", true],
+      ["b", true],
+      ["c", true],
+      ["d", false],
+    ]);
+    expect(strokeChanges(ids, 0, 0, true, none, applied)).toEqual([
+      ["b", false],
+      ["c", false],
+    ]);
+  });
+
+  it("flips the range across the anchor", () => {
+    const applied = new Map([
+      ["a", false],
+      ["b", true],
+      ["c", true],
+      ["d", false],
+    ]);
+    // anchor b, 아래(c)로 칠하다가 위(a)로 넘어감 → c는 원래대로, a는 칠함
+    expect(strokeChanges(ids, 1, 0, true, none, applied)).toEqual([
+      ["a", true],
+      ["c", false],
+    ]);
   });
 });

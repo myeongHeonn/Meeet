@@ -28,11 +28,24 @@ interface HeatmapProps extends CommonProps {
 
 export type TimeGridProps = EditProps | HeatmapProps;
 
-// 한 번의 칠하기 동작이 채울 목표 상태와 한정할 날짜 컬럼.
+// 한 번의 칠하기 동작(획). 같은 날짜 컬럼 안에서 시작 칸~현재 칸 구간을 목표 상태로 칠한다(FR-6).
 interface Stroke {
   target: boolean;
   dateKey: string | null;
+  columnIds: string[]; // 획이 한정된 날짜 컬럼의 슬롯 id(시간순)
+  anchor: number; // 시작 칸의 columnIds 인덱스
+  original: Map<string, boolean>; // 획 시작 전 컬럼 각 칸의 선택 상태
+  applied: Map<string, boolean>; // 획 동안 부모에 알린 현재 상태
 }
+
+const emptyStroke = (): Stroke => ({
+  target: false,
+  dateKey: null,
+  columnIds: [],
+  anchor: -1,
+  original: new Map(),
+  applied: new Map(),
+});
 
 // 마우스/펜 드래그 페인트 상태.
 interface DragState extends Stroke {
@@ -61,6 +74,26 @@ const MOVE_TOLERANCE_PX = 8;
 const AUTO_SCROLL_EDGE_PX = 48;
 const AUTO_SCROLL_MAX_PX = 14; // 프레임당
 
+// 획을 칸 to까지 늘이거나 줄였을 때 바뀌어야 하는 칸과 그 상태. 구간 [anchor, to] 안은 목표 상태,
+// 밖은 획 시작 전 상태다. 구간으로 계산하므로 포인터가 빠르게 움직여 건너뛴 칸도 채워진다.
+export function strokeChanges(
+  columnIds: string[],
+  anchor: number,
+  to: number,
+  target: boolean,
+  original: Map<string, boolean>,
+  applied: Map<string, boolean>,
+): [string, boolean][] {
+  const lo = Math.min(anchor, to);
+  const hi = Math.max(anchor, to);
+  const changes: [string, boolean][] = [];
+  columnIds.forEach((id, i) => {
+    const next = i >= lo && i <= hi ? target : (original.get(id) ?? false);
+    if (applied.get(id) !== next) changes.push([id, next]);
+  });
+  return changes;
+}
+
 // 손가락 y가 보이는 격자 구간 [top, bottom]의 가장자리에 가까울수록 빠르게, 밖이면 최대 속도로
 // 스크롤할 양(위 음수/아래 양수). 가운데면 0.
 export function autoScrollDelta(y: number, top: number, bottom: number): number {
@@ -81,16 +114,14 @@ function formatDateLabel(dateKey: string): string {
 export function TimeGrid(props: TimeGridProps) {
   const layout = buildGridLayout(props.slots, props.timeZone);
   const drag = useRef<DragState>({
+    ...emptyStroke(),
     active: false,
-    target: false,
-    dateKey: null,
     lastPointerType: "mouse",
   });
   const touch = useRef<TouchPaintState>({
+    ...emptyStroke(),
     timer: null,
     painting: false,
-    target: false,
-    dateKey: null,
     startX: 0,
     startY: 0,
     lastSlotId: null,
@@ -123,11 +154,41 @@ export function TimeGrid(props: TimeGridProps) {
     return <p className="text-sm text-gray-500">표시할 시간이 없습니다.</p>;
   }
 
-  // 같은 날짜 컬럼일 때만 목표 상태로 칠한다(가로 드래그 차단). 마우스·터치 공용.
+  // 획을 칸 slotId까지 늘이거나 줄인다. 같은 날짜 컬럼일 때만(가로 드래그 차단). 마우스·터치 공용.
+  // props.value 대신 획 스냅샷으로 계산해, 자동 스크롤 루프처럼 옛 렌더의 클로저에서 불려도 맞게 동작한다.
   const paint = (stroke: Stroke, slotId: string, dateKey: string) => {
-    if (props.mode === "edit" && stroke.dateKey === dateKey) {
-      props.onToggle(slotId, stroke.target);
+    if (props.mode !== "edit" || stroke.dateKey !== dateKey || stroke.anchor < 0) return;
+    const to = stroke.columnIds.indexOf(slotId);
+    if (to < 0) return;
+    const changes = strokeChanges(
+      stroke.columnIds,
+      stroke.anchor,
+      to,
+      stroke.target,
+      stroke.original,
+      stroke.applied,
+    );
+    for (const [id, next] of changes) {
+      stroke.applied.set(id, next);
+      props.onToggle(id, next);
     }
+  };
+
+  // 시작 칸과 그 날짜 컬럼의 현재 상태를 스냅샷하고 시작 칸을 칠한다.
+  const beginStroke = (
+    stroke: Stroke,
+    slotId: string,
+    dateKey: string,
+    target: boolean,
+    value: Set<string>,
+  ) => {
+    stroke.target = target;
+    stroke.dateKey = dateKey;
+    stroke.columnIds = columnSlotIds(dateKey);
+    stroke.anchor = stroke.columnIds.indexOf(slotId);
+    stroke.original = new Map(stroke.columnIds.map((id) => [id, value.has(id)]));
+    stroke.applied = new Map(stroke.original);
+    paint(stroke, slotId, dateKey);
   };
 
   const endDrag = () => {
@@ -154,17 +215,15 @@ export function TimeGrid(props: TimeGridProps) {
     endTouch();
     t.suppressClick = false;
     if (props.mode !== "edit" || props.disabled) return;
-    const onToggle = props.onToggle;
+    const value = props.value;
     t.startX = e.clientX;
     t.startY = e.clientY;
-    t.dateKey = dateKey;
-    t.target = !selected;
     t.timer = setTimeout(() => {
       t.timer = null;
       t.painting = true;
       t.suppressClick = true;
       t.lastSlotId = slotId;
-      onToggle(slotId, t.target);
+      beginStroke(t, slotId, dateKey, !selected, value);
       navigator.vibrate?.(10);
     }, LONG_PRESS_MS);
   };
@@ -266,11 +325,8 @@ export function TimeGrid(props: TimeGridProps) {
               return;
             }
             // 마우스: 즉시 토글하고 드래그 시작.
-            const next = !selected;
             drag.current.active = true;
-            drag.current.target = next;
-            drag.current.dateKey = dateKey;
-            props.onToggle(slotId, next);
+            beginStroke(drag.current, slotId, dateKey, !selected, props.value);
           }}
           onPointerEnter={() => {
             // 마우스 드래그: 같은 열(날짜)일 때만 토글한다(가로 드래그 차단).
