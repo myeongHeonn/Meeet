@@ -59,11 +59,6 @@ interface TouchPaintState extends Stroke {
   painting: boolean; // 칠하기 모드(스크롤 잠금)
   startX: number;
   startY: number;
-  lastSlotId: string | null;
-  // 마지막 손가락 좌표. 자동 스크롤 루프가 손가락이 멈춰 있어도 그 아래 칸을 칠하는 데 쓴다.
-  lastX: number;
-  lastY: number;
-  scrollRaf: number | null; // 가장자리 자동 스크롤 rAF 루프
   // 칠하기 모드를 거친 제스처 뒤의 click을 무시한다. 드래그 후엔 click이 안 오는 경우가 많아
   // click에서 지우지 않고 다음 터치 pointerdown에서 초기화한다.
   suppressClick: boolean;
@@ -124,12 +119,13 @@ export function TimeGrid(props: TimeGridProps) {
     painting: false,
     startX: 0,
     startY: 0,
-    lastSlotId: null,
-    lastX: 0,
-    lastY: 0,
-    scrollRaf: null,
     suppressClick: false,
   });
+  // 칠하는 중 마지막 포인터 좌표와 가장자리 자동 스크롤 rAF 루프. 마우스·터치 공용. 루프는 포인터가
+  // 멈춰 있어도 스크롤로 그 아래 들어온 칸을 칠해야 하므로 마지막 좌표를 기억한다.
+  const pointer = useRef<{ x: number; y: number; raf: number | null }>({ x: 0, y: 0, raf: null });
+  // 마우스 드래그 동안 window에 단 pointermove/pointerup 리스너 해제 함수.
+  const releaseMouse = useRef<(() => void) | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isEmpty = layout.dateKeys.length === 0;
 
@@ -143,10 +139,12 @@ export function TimeGrid(props: TimeGridProps) {
       if (t.painting) e.preventDefault();
     };
     el.addEventListener("touchmove", onTouchMove, { passive: false });
+    const p = pointer.current;
     return () => {
       el.removeEventListener("touchmove", onTouchMove);
       if (t.timer) clearTimeout(t.timer);
-      if (t.scrollRaf !== null) cancelAnimationFrame(t.scrollRaf);
+      if (p.raf !== null) cancelAnimationFrame(p.raf);
+      releaseMouse.current?.();
     };
   }, [isEmpty]);
 
@@ -191,8 +189,36 @@ export function TimeGrid(props: TimeGridProps) {
     paint(stroke, slotId, dateKey);
   };
 
+  const stopAutoScroll = () => {
+    const p = pointer.current;
+    if (p.raf !== null) cancelAnimationFrame(p.raf);
+    p.raf = null;
+  };
+
   const endDrag = () => {
     drag.current.active = false;
+    stopAutoScroll();
+    releaseMouse.current?.();
+    releaseMouse.current = null;
+  };
+
+  // 마우스 드래그는 격자 밖으로 나가도 버튼을 놓을 때까지 이어진다. 격자 밖에선 칸의 pointerenter가 오지
+  // 않으므로 window에서 좌표를 받아 칠하기·자동 스크롤을 이어 간다.
+  const trackMouseDrag = () => {
+    releaseMouse.current?.();
+    const onMove = (e: PointerEvent) => {
+      // 창 밖에서 버튼을 놓아 pointerup을 놓친 경우.
+      if (e.buttons === 0) return endDrag();
+      trackPointer(e.clientX, e.clientY);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+    releaseMouse.current = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", endDrag);
+      window.removeEventListener("pointercancel", endDrag);
+    };
   };
 
   // 롱프레스 대기/칠하기 모드를 끝내고 스크롤을 돌려준다. suppressClick은 뒤따르는 click을 위해 남긴다.
@@ -201,8 +227,7 @@ export function TimeGrid(props: TimeGridProps) {
     if (t.timer) clearTimeout(t.timer);
     t.timer = null;
     t.painting = false;
-    if (t.scrollRaf !== null) cancelAnimationFrame(t.scrollRaf);
-    t.scrollRaf = null;
+    stopAutoScroll();
   };
 
   const startTouchPress = (
@@ -222,7 +247,6 @@ export function TimeGrid(props: TimeGridProps) {
       t.timer = null;
       t.painting = true;
       t.suppressClick = true;
-      t.lastSlotId = slotId;
       beginStroke(t, slotId, dateKey, !selected, value);
       navigator.vibrate?.(10);
     }, LONG_PRESS_MS);
@@ -240,36 +264,44 @@ export function TimeGrid(props: TimeGridProps) {
     }
     if (!t.painting) return;
     // 격자 밖으로 나가도 모드는 유지한다 — 칸이 아닌 곳에선 칠하지 않을 뿐이고, 위/아래로 나가면 자동 스크롤된다.
-    t.lastX = e.clientX;
-    t.lastY = e.clientY;
-    paintAt(e.clientX, e.clientY);
-    if (t.scrollRaf === null) t.scrollRaf = requestAnimationFrame(autoScrollStep);
+    trackPointer(e.clientX, e.clientY);
   };
 
-  // 좌표 아래가 이 격자의 칸이면 현재 터치 획으로 칠한다.
+  // 지금 진행 중인 획(마우스 드래그 또는 터치 칠하기 모드).
+  const activeStroke = (): Stroke | null =>
+    drag.current.active ? drag.current : touch.current.painting ? touch.current : null;
+
+  // 칠하는 중 포인터가 움직였다: 좌표를 기억하고, 그 아래 칸까지 칠하고, 필요하면 자동 스크롤을 시작한다.
+  const trackPointer = (x: number, y: number) => {
+    const p = pointer.current;
+    p.x = x;
+    p.y = y;
+    paintAt(x, y);
+    if (p.raf === null) p.raf = requestAnimationFrame(autoScrollStep);
+  };
+
+  // 좌표 아래가 이 격자의 칸이면 진행 중인 획을 그 칸까지 늘이거나 줄인다.
   const paintAt = (x: number, y: number) => {
-    const t = touch.current;
+    const stroke = activeStroke();
     const el = containerRef.current;
     const cellEl = document
       .elementFromPoint(x, y)
       ?.closest<HTMLElement>("[data-slot-id][data-date-key]");
-    if (!el || !cellEl || !el.contains(cellEl)) return;
+    if (!stroke || !el || !cellEl || !el.contains(cellEl)) return;
     const { slotId, dateKey } = cellEl.dataset;
-    if (!slotId || !dateKey || slotId === t.lastSlotId) return;
-    t.lastSlotId = slotId;
-    paint(t, slotId, dateKey);
+    if (slotId && dateKey) paint(stroke, slotId, dateKey);
   };
 
-  // 칠하기 모드 중 손가락이 보이는 격자의 위/아래 가장자리 근처면 그 방향으로 스크롤하고, 새로 손가락 아래
+  // 칠하는 중 포인터가 보이는 격자의 위/아래 가장자리 근처면 그 방향으로 스크롤하고, 새로 포인터 아래
   // 들어온 칸을 칠한다. 격자가 끝까지 스크롤됐는데 화면 밖으로 이어져 있으면 페이지를 스크롤한다.
   const autoScrollStep = () => {
-    const t = touch.current;
+    const p = pointer.current;
     const el = containerRef.current;
-    t.scrollRaf = null;
-    if (!t.painting || !el) return;
+    p.raf = null;
+    if (!activeStroke() || !el) return;
     const rect = el.getBoundingClientRect();
     const dy = autoScrollDelta(
-      t.lastY,
+      p.y,
       Math.max(rect.top, 0),
       Math.min(rect.bottom, window.innerHeight),
     );
@@ -281,12 +313,12 @@ export function TimeGrid(props: TimeGridProps) {
         window.scrollBy(0, dy);
       }
     }
-    paintAt(t.lastX, t.lastY);
-    t.scrollRaf = requestAnimationFrame(autoScrollStep);
+    paintAt(p.x, p.y);
+    p.raf = requestAnimationFrame(autoScrollStep);
   };
 
+  // 마우스 드래그는 격자를 벗어나도 끝내지 않는다(버튼을 놓을 때 window pointerup에서 끝난다).
   const onContainerLeave = () => {
-    endDrag();
     if (props.mode === "heatmap") props.onSlotHover?.(null);
   };
 
@@ -327,6 +359,7 @@ export function TimeGrid(props: TimeGridProps) {
             // 마우스: 즉시 토글하고 드래그 시작.
             drag.current.active = true;
             beginStroke(drag.current, slotId, dateKey, !selected, props.value);
+            trackMouseDrag();
           }}
           onPointerEnter={() => {
             // 마우스 드래그: 같은 열(날짜)일 때만 토글한다(가로 드래그 차단).

@@ -400,3 +400,20 @@ DB에 직접 의존하는 mutation/query는 MVP에서 통합 테스트를 두지
   모바일 "내 가능 시간" 탭 라벨 옆에 dirty면 작은 점(`aria-label`로 의미 제공).
 - **테스트**: 칸을 칠하면 문구가 보이는지, 원래대로 되돌리면 사라지는지, 제출 후 사라지는지, 프리필 직후엔 없는지.
 - **구현 순서**: T15 — collections + poll-view 수정 + 테스트 → lint/test/build.
+
+## 14. 개정: 마우스 드래그 자동 스크롤 (FR-6, 2026-10-09)
+
+새 데이터 모델/API 없음 — `time-grid.tsx`만 수정. §11의 터치 자동 스크롤을 마우스 드래그와 공유한다.
+
+- **문제**: 자동 스크롤 루프가 터치 칠하기 모드에만 붙어 있었고, 마우스 드래그는 컨테이너 `pointerleave`에서
+  끝났다. 데스크톱에서 아래쪽 칸까지 칠하려면 드래그를 끊고 휠로 내린 뒤 다시 드래그해야 했다.
+- **공용화**: 마지막 포인터 좌표와 rAF 핸들을 터치 상태에서 공용 ref(`pointer`)로 옮기고, 진행 중인 획을
+  `activeStroke()`(마우스 `drag.active` 또는 터치 `painting`)로 고른다. `paintAt`/`autoScrollStep`은 이 획에 대해 동작.
+- **격자 밖 추적**: 마우스는 포인터를 캡처하지 않으므로 격자 밖에선 칸의 `pointerenter`가 오지 않는다. 드래그
+  시작 시 `window`에 `pointermove`/`pointerup`/`pointercancel`을 달아 좌표를 받고(`trackPointer`), 놓으면 해제한다.
+  창 밖에서 놓아 `pointerup`을 놓친 경우를 위해 `pointermove`의 `buttons === 0`이면 드래그를 끝낸다.
+  컨테이너 `pointerleave`는 더 이상 드래그를 끝내지 않는다(히트맵 hover 해제만).
+- **불변**: 칸의 `onPointerEnter` 경로는 그대로 둔다(구간 계산이 멱등이라 window 경로와 겹쳐도 무해).
+- **테스트**: 마우스 드래그 중 아래 가장자리에서 자동 스크롤 + 이어 칠하기, 격자 밖으로 나갔다 들어와도 이어지고
+  놓은 뒤엔 멈춤, 버튼 없이 움직이면 종료.
+- **구현 순서**: T16 — `time-grid.tsx` 수정 + 테스트 → lint/test/build.
