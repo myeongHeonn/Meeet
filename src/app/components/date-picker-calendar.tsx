@@ -69,7 +69,9 @@ export function DatePickerCalendar({ selected, onToggle }: Props) {
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-x-1 gap-y-1 text-center text-xs">
+      {/* touch-manipulation: 모바일에서 붙어 있는 날짜를 빠르게 연달아 누르면 브라우저가 "두 번 탭 확대"로
+          해석해 click을 삼킨다. 확대 제스처를 꺼 탭이 바로 선택되게 한다. */}
+      <div className="grid touch-manipulation grid-cols-7 gap-x-1 gap-y-1 text-center text-xs">
         {WEEKDAYS.map((w) => (
           <div key={w} className="py-1 text-xs font-medium text-gray-400">
             {w}
