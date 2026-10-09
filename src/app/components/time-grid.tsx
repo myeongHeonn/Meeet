@@ -277,7 +277,8 @@ export function TimeGrid(props: TimeGridProps) {
       )}
       <div
         ref={containerRef}
-        className="overflow-auto select-none max-w-full max-h-[55vh] touch-manipulation"
+        // isolate: 내부 sticky 헤더/라벨의 z-index가 격자 밖으로 새어 하단 고정 제출 바 위로 올라오지 않게 한다.
+        className="isolate overflow-auto select-none max-w-full max-h-[55vh] touch-manipulation"
         onPointerMove={onContainerPointerMove}
         onPointerUp={() => {
           endDrag();
