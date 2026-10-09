@@ -11,7 +11,7 @@ import {
   type ParticipantRow,
 } from "@/lib/polls/aggregate";
 import { getZonedParts } from "@/lib/datetime";
-import { withSetItem } from "@/lib/collections";
+import { sameSet, withSetItem } from "@/lib/collections";
 import { getJson, postJson } from "@/lib/api-client";
 
 interface PollSummary {
@@ -83,6 +83,14 @@ export function PollView({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  // 마지막으로 저장된 응답. 입력이 이와 다르면 "제출하지 않은 변경"으로 표시한다(FR-17).
+  // 저장된 응답이 없으면 빈 이름·빈 선택이 기준이다.
+  const [savedResponse, setSavedResponse] = useState<{ name: string; selected: Set<string> }>(() => ({
+    name: "",
+    selected: new Set(),
+  }));
+  const dirty = name.trim() !== savedResponse.name || !sameSet(selected, savedResponse.selected);
+
   // 상세를 볼 칸: hover는 미리보기, click은 고정(pin). hover가 있으면 그걸 우선한다(FR-8).
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
   const [pinnedSlot, setPinnedSlot] = useState<string | null>(null);
@@ -102,14 +110,14 @@ export function PollView({
       editTokenRef.current = saved.editToken ?? null;
       const me = participants.find((p) => p.id === saved.participantId);
       if (me) {
-        setName(me.name);
-        setSelected(
-          new Set(
-            availabilities
-              .filter((a) => a.participantId === saved.participantId)
-              .map((a) => a.pollSlotId),
-          ),
+        const mySlots = new Set(
+          availabilities
+            .filter((a) => a.participantId === saved.participantId)
+            .map((a) => a.pollSlotId),
         );
+        setName(me.name);
+        setSelected(mySlots);
+        setSavedResponse({ name: me.name.trim(), selected: mySlots });
       }
     } catch {
       // 손상된 값은 무시한다.
@@ -149,12 +157,14 @@ export function PollView({
   async function submitResponse() {
     setBusy(true);
     setMessage(null);
+    // 응답을 기다리는 동안 더 고칠 수 있으므로, 저장 기준값은 지금 보내는 값으로 잡는다.
+    const submitted = { name: name.trim(), selected };
     try {
       const res = await postJson<{ editToken?: string; participantId?: string }>(
         `/api/polls/${token}/responses`,
         {
-          name: name.trim(),
-          availableSlotIds: [...selected],
+          name: submitted.name,
+          availableSlotIds: [...submitted.selected],
           editToken: editTokenRef.current ?? undefined,
         },
       );
@@ -170,6 +180,7 @@ export function PollView({
             }),
           );
         }
+        setSavedResponse(submitted);
         setMessage("응답이 저장되었어요.");
         setStep("results");
         await refetch();
@@ -219,6 +230,12 @@ export function PollView({
           }`}
         >
           내 가능 시간
+          {dirty && (
+            <span
+              aria-label="제출하지 않은 변경 있음"
+              className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-amber-500 align-middle"
+            />
+          )}
         </button>
         <button
           type="button"
@@ -278,10 +295,16 @@ export function PollView({
                   )}
                   {busy ? "적용 중…" : "응답 제출"}
                 </button>
-                {message && (
+                {message ? (
                   <p role="status" className="text-sm font-medium text-gray-700">
                     {message}
                   </p>
+                ) : (
+                  dirty && (
+                    <p role="status" className="text-sm font-medium text-amber-600">
+                      제출하지 않은 변경이 있어요
+                    </p>
+                  )
                 )}
               </div>
               <button
