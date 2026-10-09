@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import { TimeGrid } from "./time-grid";
+import { TimeGrid, autoScrollDelta } from "./time-grid";
 
 // jsdom에는 PointerEvent가 없어 fireEvent가 일반 Event로 대체하고 pointerType/좌표를 버린다.
 // 이 파일 한정으로 최소 폴리필을 둔다(jest는 테스트 파일마다 환경을 새로 만든다).
@@ -168,13 +168,18 @@ describe("TimeGrid (edit mode)", () => {
 });
 
 describe("TimeGrid (touch paint, FR-16)", () => {
-  // s1·s2는 7/30, s3는 7/31. 좌표 y로 칸을 가리킨다: 10→s1, 40→s2, 70→s3.
+  // s1·s2는 7/30, s3는 7/31. 좌표 y로 칸을 가리킨다: 10→s1, 40→s2, 70→s3, 95→s2(가장자리 구간).
   const touchSlots = [
     { id: "s1", startsAt: "2026-07-30T09:00:00.000Z" },
     { id: "s2", startsAt: "2026-07-30T09:30:00.000Z" },
     { id: "s3", startsAt: "2026-07-31T09:00:00.000Z" },
   ];
-  const cellAtY: Record<number, string> = { 10: "slot-s1", 40: "slot-s2", 70: "slot-s3" };
+  const cellAtY: Record<number, string> = {
+    10: "slot-s1",
+    40: "slot-s2",
+    70: "slot-s3",
+    95: "slot-s2",
+  };
   const touchAt = (y: number) => ({ pointerType: "touch", clientX: 10, clientY: y });
 
   beforeEach(() => {
@@ -289,12 +294,56 @@ describe("TimeGrid (touch paint, FR-16)", () => {
     expect(onToggle.mock.calls).toEqual([["s3", true]]);
   });
 
-  it("ends paint mode when the finger leaves the grid and does not resume on return", () => {
+  it("keeps paint mode when the finger leaves the grid and paints again on return", () => {
     const onToggle = renderGrid();
     longPress("s1", 10);
     fireEvent.pointerMove(cell("s1"), touchAt(150));
     fireEvent.pointerMove(cell("s1"), touchAt(40));
-    expect(onToggle.mock.calls).toEqual([["s1", true]]);
+    expect(onToggle.mock.calls).toEqual([
+      ["s1", true],
+      ["s2", true],
+    ]);
+  });
+
+  // jsdom의 scrollTop은 항상 0이라 값이 저장되는 가짜 속성으로 바꾼다.
+  function fakeScrollTop() {
+    const box = cell("s1").closest<HTMLElement>(".overflow-auto")!;
+    let top = 0;
+    Object.defineProperty(box, "scrollTop", {
+      configurable: true,
+      get: () => top,
+      set: (v: number) => {
+        top = v;
+      },
+    });
+    return () => top;
+  }
+
+  it("auto-scrolls the grid near the bottom edge and paints the cell that comes under the finger", () => {
+    const onToggle = renderGrid();
+    const scrollTop = fakeScrollTop();
+    longPress("s1", 10);
+    fireEvent.pointerMove(cell("s1"), touchAt(95));
+    act(() => {
+      jest.advanceTimersByTime(50);
+    });
+    expect(scrollTop()).toBeGreaterThan(0);
+    expect(onToggle.mock.calls).toEqual([
+      ["s1", true],
+      ["s2", true],
+    ]);
+  });
+
+  it("stops auto-scrolling once the finger is lifted", () => {
+    renderGrid();
+    const scrollTop = fakeScrollTop();
+    longPress("s1", 10);
+    fireEvent.pointerMove(cell("s1"), touchAt(95));
+    fireEvent.pointerUp(cell("s1"), touchAt(95));
+    act(() => {
+      jest.advanceTimersByTime(100);
+    });
+    expect(scrollTop()).toBe(0);
   });
 
   it("blocks the context menu while painting", () => {
@@ -407,5 +456,21 @@ describe("TimeGrid (empty)", () => {
   it("renders a fallback message with no slots", () => {
     render(<TimeGrid mode="edit" slots={[]} timeZone="UTC" value={new Set()} onToggle={jest.fn()} />);
     expect(screen.getByText("표시할 시간이 없습니다.")).toBeInTheDocument();
+  });
+});
+
+describe("autoScrollDelta", () => {
+  it("is zero in the middle of the visible grid", () => {
+    expect(autoScrollDelta(150, 0, 300)).toBe(0);
+  });
+
+  it("scrolls up/down proportionally to the depth into the edge zone", () => {
+    expect(autoScrollDelta(24, 0, 300)).toBeCloseTo(-7);
+    expect(autoScrollDelta(276, 0, 300)).toBeCloseTo(7);
+  });
+
+  it("scrolls at full speed outside the grid", () => {
+    expect(autoScrollDelta(-50, 0, 300)).toBe(-14);
+    expect(autoScrollDelta(400, 0, 300)).toBe(14);
   });
 });
