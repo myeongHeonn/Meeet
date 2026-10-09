@@ -346,6 +346,52 @@ describe("TimeGrid (touch paint, FR-16)", () => {
     ]);
   });
 
+  // 마우스 드래그(FR-6): 격자 밖에선 window에서 좌표를 받는다. buttons=1은 버튼을 누른 채 움직임.
+  const mouseAt = (y: number, buttons = 1) => ({
+    pointerType: "mouse",
+    clientX: 10,
+    clientY: y,
+    buttons,
+  });
+
+  it("auto-scrolls the grid during a mouse drag near the bottom edge", () => {
+    const onToggle = renderGrid();
+    const scrollTop = fakeScrollTop();
+    fireEvent.pointerDown(cell("s1"), mouseAt(10));
+    fireEvent.pointerMove(window, mouseAt(95));
+    act(() => {
+      jest.advanceTimersByTime(50);
+    });
+    expect(scrollTop()).toBeGreaterThan(0);
+    expect(onToggle.mock.calls).toEqual([
+      ["s1", true],
+      ["s2", true],
+    ]);
+  });
+
+  it("keeps a mouse drag going outside the grid until the button is released", () => {
+    const onToggle = renderGrid();
+    fireEvent.pointerDown(cell("s1"), mouseAt(10));
+    fireEvent.pointerLeave(cell("s1").closest(".overflow-auto")!);
+    fireEvent.pointerMove(window, mouseAt(150));
+    fireEvent.pointerMove(window, mouseAt(40));
+    fireEvent.pointerUp(window, mouseAt(40));
+    // 놓은 뒤의 움직임은 획을 바꾸지 않는다(s2가 되돌아가지 않음).
+    fireEvent.pointerMove(window, mouseAt(10));
+    expect(onToggle.mock.calls).toEqual([
+      ["s1", true],
+      ["s2", true],
+    ]);
+  });
+
+  it("ends a mouse drag when a move arrives with no button pressed", () => {
+    const onToggle = renderGrid();
+    fireEvent.pointerDown(cell("s1"), mouseAt(10));
+    fireEvent.pointerMove(window, mouseAt(40, 0));
+    fireEvent.pointerMove(window, mouseAt(40));
+    expect(onToggle.mock.calls).toEqual([["s1", true]]);
+  });
+
   it("stops auto-scrolling once the finger is lifted", () => {
     renderGrid();
     const scrollTop = fakeScrollTop();

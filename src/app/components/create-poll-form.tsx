@@ -16,11 +16,12 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 
 const END_TIME_OPTIONS = [...TIME_OPTIONS, "24:00"];
 
+// 모바일은 글자를 16px(text-base)로 둔다. iOS Safari는 16px 미만 입력칸에 포커스하면 화면을 확대한다.
 const inputClass =
-  "w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-900/10 placeholder:text-gray-400";
+  "w-full rounded-lg border border-gray-200 px-4 py-2.5 text-base md:text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-900/10 placeholder:text-gray-400";
 
 const selectClass =
-  "rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-900/10";
+  "rounded-lg border border-gray-200 px-3 py-2 text-base md:text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-900/10";
 
 export function CreatePollForm() {
   const router = useRouter();

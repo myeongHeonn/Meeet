@@ -268,7 +268,8 @@ export function PollView({
             }}
             maxLength={80}
             placeholder="이름을 입력하면 칠할 수 있어요"
-            className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-900/10 placeholder:text-gray-400"
+            // 모바일 text-base(16px): iOS Safari가 16px 미만 입력칸 포커스 시 화면을 확대하는 것을 막는다.
+            className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-base md:text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-900/10 placeholder:text-gray-400"
           />
           <TimeGrid
             mode="edit"
