@@ -233,10 +233,6 @@ export function PollView({
         </button>
       </div>
 
-      {message && (
-        <p className="text-sm font-medium text-gray-700">{message}</p>
-      )}
-
       {/* 모바일은 한 컬럼 그대로. 데스크톱은 패널을 격자 폭만큼만 차지시키고 가운데 정렬해,
           날짜가 적어도 빈 공간이 좌우 여백으로 균형 있게 빠지도록 한다. */}
       <div className="flex flex-col gap-8 md:flex-row md:justify-center">
@@ -247,7 +243,10 @@ export function PollView({
           <input
             aria-label="이름"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              setMessage(null);
+            }}
             maxLength={80}
             placeholder="이름을 입력하면 칠할 수 있어요"
             className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-900/10 placeholder:text-gray-400"
@@ -258,27 +257,37 @@ export function PollView({
             timeZone={timeZone}
             value={selected}
             disabled={name.trim().length === 0}
-            onToggle={(slotId, next) =>
-              setSelected((prev) => withSetItem(prev, slotId, next))
-            }
+            onToggle={(slotId, next) => {
+              setSelected((prev) => withSetItem(prev, slotId, next));
+              // 저장 뒤 다시 고치기 시작하면 "저장되었어요"는 더 이상 사실이 아니므로 지운다.
+              setMessage(null);
+            }}
           />
           <div className="sticky bottom-0 bg-white pt-2 pb-1 space-y-1.5">
+            {/* 저장 결과 문구는 버튼 옆 같은 줄에 띄워, 제출할 때 위쪽 레이아웃이 밀리지 않게 한다. */}
             <div className="flex items-center justify-between gap-3">
-              <button
-                type="button"
-                disabled={busy || name.trim().length === 0}
-                onClick={submitResponse}
-                className="flex items-center gap-2 rounded-full bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {busy && (
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              <div className="flex min-w-0 items-center gap-3">
+                <button
+                  type="button"
+                  disabled={busy || name.trim().length === 0}
+                  onClick={submitResponse}
+                  className="flex shrink-0 items-center gap-2 rounded-full bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {busy && (
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  )}
+                  {busy ? "적용 중…" : "응답 제출"}
+                </button>
+                {message && (
+                  <p role="status" className="text-sm font-medium text-gray-700">
+                    {message}
+                  </p>
                 )}
-                {busy ? "적용 중…" : "응답 제출"}
-              </button>
+              </div>
               <button
                 type="button"
                 onClick={() => setStep("results")}
-                className="text-sm text-gray-400 hover:text-gray-600 md:hidden"
+                className="shrink-0 whitespace-nowrap text-sm text-gray-400 hover:text-gray-600 md:hidden"
               >
                 그룹 현황 보기 →
               </button>
@@ -293,7 +302,13 @@ export function PollView({
           className={`min-w-0 space-y-3 md:flex-1 md:max-w-[var(--panel-max)] ${step === "edit" ? "hidden md:block" : ""}`}
         >
           <div className="flex items-center justify-between md:block">
-            <h2 className="text-sm font-semibold text-gray-700">그룹 현황</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-gray-700">그룹 현황</h2>
+              {/* 모바일은 제출하면 이 탭으로 넘어와 버튼 옆 문구가 안 보이므로 여기서도 알린다. */}
+              {message && (
+                <span className="text-xs text-gray-500 md:hidden">{message}</span>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => setStep("edit")}
