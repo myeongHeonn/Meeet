@@ -143,6 +143,25 @@ describe("PollView (unsaved changes, FR-17)", () => {
     delete (global as { fetch?: unknown }).fetch;
   });
 
+  it("shows nothing while a first-time responder fills in the form", () => {
+    window.localStorage.clear();
+    render(<PollView {...baseProps} />);
+    fireEvent.change(screen.getByLabelText("이름"), { target: { value: "민수" } });
+    fireEvent.pointerDown(screen.getByLabelText("slot-s2"));
+    expect(screen.queryByText(UNSAVED)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("제출하지 않은 변경 있음")).not.toBeInTheDocument();
+  });
+
+  it("starts flagging edits after the first response is submitted", async () => {
+    window.localStorage.clear();
+    render(<PollView {...baseProps} />);
+    fireEvent.change(screen.getByLabelText("이름"), { target: { value: "민수" } });
+    fireEvent.click(screen.getByRole("button", { name: "응답 제출" }));
+    await screen.findAllByText("응답이 저장되었어요.");
+    fireEvent.pointerDown(screen.getByLabelText("slot-s2"));
+    expect(screen.getByText(UNSAVED)).toBeInTheDocument();
+  });
+
   it("shows nothing right after the saved response is prefilled", () => {
     render(<PollView {...baseProps} />);
     expect(screen.queryByText(UNSAVED)).not.toBeInTheDocument();

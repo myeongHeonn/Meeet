@@ -84,12 +84,14 @@ export function PollView({
   const [message, setMessage] = useState<string | null>(null);
 
   // 마지막으로 저장된 응답. 입력이 이와 다르면 "제출하지 않은 변경"으로 표시한다(FR-17).
-  // 저장된 응답이 없으면 빈 이름·빈 선택이 기준이다.
-  const [savedResponse, setSavedResponse] = useState<{ name: string; selected: Set<string> }>(() => ({
-    name: "",
-    selected: new Set(),
-  }));
-  const dirty = name.trim() !== savedResponse.name || !sameSet(selected, savedResponse.selected);
+  // 아직 저장된 응답이 없으면(null) 첫 응답 중이므로 표시하지 않는다.
+  const [savedResponse, setSavedResponse] = useState<{
+    name: string;
+    selected: Set<string>;
+  } | null>(null);
+  const dirty =
+    savedResponse !== null &&
+    (name.trim() !== savedResponse.name || !sameSet(selected, savedResponse.selected));
 
   // 상세를 볼 칸: hover는 미리보기, click은 고정(pin). hover가 있으면 그걸 우선한다(FR-8).
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
