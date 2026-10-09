@@ -73,3 +73,45 @@ describe("PollView (prefill from edit token)", () => {
     expect(screen.getByLabelText("이름")).toHaveValue("");
   });
 });
+
+describe("PollView (save message)", () => {
+  beforeEach(() => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      // 제출(POST)과 직후 재조회(GET)가 같은 응답을 받아도 충분하다.
+      json: async () => ({
+        editToken: "e1",
+        participantId: "p3",
+        participants: [],
+        availabilities: [],
+      }),
+    }) as unknown as typeof fetch;
+  });
+  afterEach(() => {
+    window.localStorage.clear();
+    delete (global as { fetch?: unknown }).fetch;
+  });
+
+  async function submitAs(name: string) {
+    render(<PollView {...baseProps} />);
+    fireEvent.change(screen.getByLabelText("이름"), { target: { value: name } });
+    fireEvent.click(screen.getByRole("button", { name: "응답 제출" }));
+    await screen.findByRole("status");
+  }
+
+  it("shows the saved message beside the submit button, not above the panels", async () => {
+    await submitAs("민수");
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("응답이 저장되었어요.");
+    expect(status.parentElement).toContainElement(
+      screen.getByRole("button", { name: "응답 제출" }),
+    );
+  });
+
+  it("clears the saved message once the response is edited again", async () => {
+    await submitAs("민수");
+    fireEvent.pointerDown(screen.getByLabelText("slot-s2"));
+    expect(screen.queryByText("응답이 저장되었어요.")).not.toBeInTheDocument();
+  });
+});
