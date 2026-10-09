@@ -385,3 +385,17 @@ DB에 직접 의존하는 mutation/query는 MVP에서 통합 테스트를 두지
 - **테스트 (time-grid.test.tsx)**: `strokeChanges` 단위 테스트(늘리기/줄이기/위로 넘어가기/건너뛴 칸 채우기);
   마우스·터치 각각 "내렸다 올리면 되돌아감", "s1→s4로 바로 이동해도 s2·s3 칠해짐".
 - **구현 순서**: T14 — `time-grid.tsx` 수정 + 테스트 → lint/test/build → spec 리비전 줄 확인.
+
+## 13. 개정: 제출하지 않은 변경 표시 (FR-17, 2026-10-09)
+
+새 데이터 모델/API 없음 — `poll-view.tsx`만 수정.
+
+- **기준값**: `saved: { name, selected }` 상태를 둔다. 초기값은 빈 이름·빈 Set, FR-7a 프리필 시 프리필 값,
+  제출 성공 시 **제출한 값**(요청 시점에 캡처 — 응답 대기 중 사용자가 더 고칠 수 있으므로).
+- **비교**: `dirty = name.trim() !== saved.name || !sameSet(selected, saved.selected)`. `sameSet`은
+  `src/lib/collections.ts`에 추가하고 단위 테스트한다.
+- **표시**: 제출 버튼 옆 문구 자리(FR-6 저장 문구와 같은 자리)에 저장/실패 문구가 있으면 그것을, 없고 dirty면
+  "제출하지 않은 변경이 있어요"를 보인다(저장 문구는 입력 시 지워지므로 둘은 자연히 겹치지 않는다).
+  모바일 "내 가능 시간" 탭 라벨 옆에 dirty면 작은 점(`aria-label`로 의미 제공).
+- **테스트**: 칸을 칠하면 문구가 보이는지, 원래대로 되돌리면 사라지는지, 제출 후 사라지는지, 프리필 직후엔 없는지.
+- **구현 순서**: T15 — collections + poll-view 수정 + 테스트 → lint/test/build.

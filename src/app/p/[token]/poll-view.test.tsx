@@ -97,7 +97,7 @@ describe("PollView (save message)", () => {
     render(<PollView {...baseProps} />);
     fireEvent.change(screen.getByLabelText("이름"), { target: { value: name } });
     fireEvent.click(screen.getByRole("button", { name: "응답 제출" }));
-    await screen.findByRole("status");
+    await screen.findAllByText("응답이 저장되었어요.");
   }
 
   it("shows the saved message beside the submit button, not above the panels", async () => {
@@ -113,5 +113,68 @@ describe("PollView (save message)", () => {
     await submitAs("민수");
     fireEvent.pointerDown(screen.getByLabelText("slot-s2"));
     expect(screen.queryByText("응답이 저장되었어요.")).not.toBeInTheDocument();
+  });
+});
+
+describe("PollView (unsaved changes, FR-17)", () => {
+  const UNSAVED = "제출하지 않은 변경이 있어요";
+
+  beforeEach(() => {
+    window.localStorage.setItem(
+      "meeet:poll:tok",
+      JSON.stringify({ editToken: "any", participantId: "p1" }),
+    );
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        editToken: "any",
+        participantId: "p1",
+        participants: baseProps.participants,
+        availabilities: [
+          { participantId: "p1", pollSlotId: "s1" },
+          { participantId: "p1", pollSlotId: "s2" },
+        ],
+      }),
+    }) as unknown as typeof fetch;
+  });
+  afterEach(() => {
+    window.localStorage.clear();
+    delete (global as { fetch?: unknown }).fetch;
+  });
+
+  it("shows nothing right after the saved response is prefilled", () => {
+    render(<PollView {...baseProps} />);
+    expect(screen.queryByText(UNSAVED)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("제출하지 않은 변경 있음")).not.toBeInTheDocument();
+  });
+
+  it("flags edits that differ from the saved response, and clears when reverted", () => {
+    render(<PollView {...baseProps} />);
+    fireEvent.pointerDown(screen.getByLabelText("slot-s2"));
+    expect(screen.getByText(UNSAVED)).toBeInTheDocument();
+    expect(screen.getByLabelText("제출하지 않은 변경 있음")).toBeInTheDocument();
+
+    fireEvent.pointerUp(screen.getByLabelText("slot-s2"));
+    fireEvent.pointerDown(screen.getByLabelText("slot-s2"));
+    expect(screen.queryByText(UNSAVED)).not.toBeInTheDocument();
+  });
+
+  it("keeps unsaved edits when switching tabs", () => {
+    render(<PollView {...baseProps} />);
+    fireEvent.pointerDown(screen.getByLabelText("slot-s2"));
+    fireEvent.click(screen.getByRole("button", { name: "그룹 현황" }));
+    fireEvent.click(screen.getByRole("button", { name: /^내 가능 시간/ }));
+    expect(screen.getByLabelText("slot-s2")).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByText(UNSAVED)).toBeInTheDocument();
+  });
+
+  it("clears the flag once the edits are submitted", async () => {
+    render(<PollView {...baseProps} />);
+    fireEvent.pointerDown(screen.getByLabelText("slot-s2"));
+    fireEvent.click(screen.getByRole("button", { name: "응답 제출" }));
+    await screen.findAllByText("응답이 저장되었어요.");
+    expect(screen.queryByText(UNSAVED)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("제출하지 않은 변경 있음")).not.toBeInTheDocument();
   });
 });

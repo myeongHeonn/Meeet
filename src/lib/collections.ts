@@ -12,3 +12,10 @@ export function withSetItem<T>(set: Set<T>, key: T, present: boolean): Set<T> {
 export function toggleSetItem<T>(set: Set<T>, key: T): Set<T> {
   return withSetItem(set, key, !set.has(key));
 }
+
+// 두 Set이 같은 원소를 담고 있는지(순서 무관).
+export function sameSet<T>(a: Set<T>, b: Set<T>): boolean {
+  if (a.size !== b.size) return false;
+  for (const v of a) if (!b.has(v)) return false;
+  return true;
+}
